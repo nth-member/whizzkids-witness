@@ -202,8 +202,9 @@ written in several strands at once, unchanged. 385 of the 400 keys carry text.
 
 What does not travel is anything obtained by going and looking: no evidence, no sources, no
 design-story chapter, no parable gloss, no correspondence. Those belong to the instance that was
-sampled against the record, not to the keys. `data/instances/again-born.json` declares it;
-`web/again-born.html` is the page.
+sampled against the record, not to the keys. `data/instances/again-born.json` declares it, and the page is
+written to the REVOTT tree — `~/revott/web/again-born.html` — not into this repository, because a
+slice of REVOTT is not part of this instance's project. `REVOTT_ROOT` overrides the location.
 
 Spans 1990-11-17 (−147.6) to 2089-06-10 (212.4), with 0.00 at 2031-04-16.
 

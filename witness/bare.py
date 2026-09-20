@@ -13,6 +13,7 @@ of the same framework, and nothing has been checked about it.
 
 from __future__ import annotations
 
+import os
 from datetime import timedelta
 from pathlib import Path
 
@@ -20,7 +21,12 @@ from .axis import load_instance
 from .graph import Graph
 from .ledger import load_keys
 
-WEB = Path(__file__).resolve().parent.parent / "web"
+# A bare instance is a slice of REVOTT, not part of this instance's project, so
+# it is written to the REVOTT tree rather than into this repository.
+REVOTT_ROOT = Path(
+    os.environ.get("REVOTT_ROOT", Path.home() / "revott")
+)
+WEB = REVOTT_ROOT / "web"
 
 
 def rows(instance_name: str):
