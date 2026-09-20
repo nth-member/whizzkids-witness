@@ -42,6 +42,45 @@ of those are future-dated and cannot hold evidence yet.) The pool worth working 
 placement happens afterwards, in code, by date. Most events land on no node, and that is the
 expected result.
 
+## The edge set
+
+The positions are not only a sequence. Each of the **399** BB keys names its successors with a
+stated gap, and those **701** edges make a directed graph: one root, **−147.6** (the Altair
+position, 1974-12-01), one sink, **212.4**, and no cycles. The widest branching is at **0.00** —
+the epoch itself, 2015-04-30 — which fans out to eighteen successors. The most converged-on key
+is **24.41**, with seven predecessors.
+
+Taking the nearest successor at every step walks **all 399 keys** in one 398-edge path from the
+root to the sink, 1974-12-01 to 2073-06-24. The edge set splits accordingly: a **backbone** of
+**395** edges joining each key to the next in position order, and **306 long-range edges** skipping
+over that spine. `witness edges` reports the split.
+
+Exactly three consecutive pairs have no direct edge, and all three sit in the same knot at the
+epoch: `−1.916 → 0.0`, `0.0 → 0.18`, `0.18 → 0.33`. The path crosses it as
+`−1.916 → 0.18 → 0.0 → 0.33` — visiting 0.18 (2015-05-18) *before* 0.0 (2015-04-30), which is what
+that one backward edge is for. The ledger orders those two positions against the calendar at the
+one place the whole axis is pinned to.
+
+    python -m witness edges                      the graph and its anomalies
+    python -m witness edges --from 0.0 --depth 1 walk forward from a key
+    python -m witness edges --from -147.6 --chain follow one path to the sink
+
+The graph runs over the **399 keys**, not the 265 nodes: a node is attached to the key standing at
+its moment, and 212 keys are carried by a node. `Node.successors` gives the successors of the key
+a node's analog is carried by — the distinction is kept rather than collapsed.
+
+**Two anomalies are preserved, not corrected.** On five edges the stated gap and the difference
+between the two keys disagree — including `23.41 → 29.528`, stated 3.6 against an implied 6.118,
+which is the row the parable itself printed in its flagged-weights table. The parable preserved
+and flagged these because reading every weight as elapsed time would need clarification of what
+the weight means; this repository keeps both numbers and marks the edge `gap disputed` rather than
+choosing one. Separately, one edge runs backwards — `0.18 → 0.0`, naming a successor eighteen days
+*earlier*. It closes no cycle, and it is not smoothed away either.
+
+The edges reach the agent as context, never as a target: a node's brief names what the ledger says
+comes next, explicitly marked as not a prediction to confirm and not something to search for. The
+research is still about one date.
+
 ## The bands
 
 A finding's band is computed in code from two dates — never taken from the model's sense of how
@@ -82,7 +121,8 @@ filesystem, off a USB stick, or any static host. No server, no network, no build
 The spine is the axis itself: positions on the rail, a *you are here* marker at today's date,
 past above and still-ahead below. Tap a position for its analog, its chapter, the evidence
 already on file and what the witness found. Search and filter by witnessed / silent / still
-ahead / exact-date.
+ahead / exact-date. A position's successors are listed under it and can be followed — tapping one
+jumps to the position that carries that key.
 
 ## Running it
 
@@ -114,6 +154,7 @@ commits anything new. It needs an `ANTHROPIC_API_KEY` repository secret and is s
 ## Layout
 
     witness/axis.py      the time axis, and the band rules
+    witness/graph.py     the successor edges, their integrity and their anomalies
     witness/ledger.py    reading the workbook into objects
     witness/prompts.py   what the witness is told, and forbidden to do
     witness/research.py  the two-phase Claude layer: search, then structure

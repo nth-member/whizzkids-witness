@@ -2,6 +2,7 @@
 
     python -m witness verify                 check the axis and read the ledger
     python -m witness nodes --horizon 400    what is still ahead
+    python -m witness edges                  the successor graph and its anomalies
     python -m witness watch --dry-run        forward, without spending anything
     python -m witness backfill --limit 2     backward, into the silent nodes
     python -m witness feed --days 7          sideways, the world placed by date
@@ -19,7 +20,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .axis import verify
-from .ledger import load_nodes, upcoming
+from .ledger import load_graph, load_nodes, upcoming
 from .render import render_upcoming_table, write_witness
 from .constants import MODEL
 from .store import FindingStore
@@ -84,6 +85,14 @@ def main(argv: list[str] | None = None) -> int:
     p_nodes = sub.add_parser("nodes", parents=[common], help="list node dates still ahead")
     p_nodes.add_argument("--horizon", type=int, default=400)
 
+    p_edges = sub.add_parser("edges", parents=[common],
+                             help="the successor graph over the 399 BB keys")
+    p_edges.add_argument("--from", dest="from_key", type=float, default=None,
+                         help="walk forward from this key")
+    p_edges.add_argument("--depth", type=int, default=2, help="how far to walk")
+    p_edges.add_argument("--chain", action="store_true",
+                         help="follow one path to the sink, nearest successor each step")
+
     p_watch = sub.add_parser("watch", parents=[common], help="forward: dates arriving or just passed")
     p_watch.add_argument("--horizon", type=int, default=120)
     p_watch.add_argument("--lookback", type=int, default=30)
@@ -125,10 +134,59 @@ def main(argv: list[str] | None = None) -> int:
         print(f"no evidence      : {sum(1 for n in nodes if n.evidence_count() == 0)} nodes")
         print(f"future-dated     : {sum(1 for n in nodes if n.is_future(now))} nodes")
         print(f"findings on file : {len(store.all())}")
+        graph = load_graph(args.workbook) if args.workbook else load_graph()
+        report = graph.integrity()
+        print(f"successor graph  : {report.edges} edges over {report.keys} keys, "
+              f"{'acyclic' if report.acyclic else 'CYCLIC'}, "
+              f"{len(report.gap_disputed)} gaps disputed  (see: witness edges)")
         ahead = upcoming(nodes, now, 400)
         if ahead:
             print(f"next date        : {ahead[0].node_id} on {ahead[0].iso_date} — {ahead[0].analog_text}")
         return 0 if check.ok else 1
+
+    if args.command == "edges":
+        graph = load_graph(args.workbook) if args.workbook else load_graph()
+        if args.from_key is not None:
+            record = graph.records.get(args.from_key)
+            if record is None:
+                print(f"no such key: {args.from_key}")
+                return 1
+            print(f"{record.key}  {record.date}  {record.analog[:70]}")
+            print(f"  in {graph.in_degree(record.key)} / out {graph.out_degree(record.key)}")
+            for edge in graph.predecessors(record.key):
+                print(f"  ← {edge.describe()}")
+            if args.chain:
+                print("  chain to the sink, nearest successor each step:")
+                for edge in graph.chain_to_sink(record.key):
+                    print(f"    {edge.describe()}")
+            else:
+                for level, edge in graph.walk(record.key, args.depth):
+                    print(f"  {'  ' * level}→ {edge.describe()}")
+            return 0
+
+        report = graph.integrity()
+        print(f"keys             : {report.keys}")
+        print(f"edges            : {report.edges} — {report.backbone} joining each key to the")
+        print( "                   next in position order, and")
+        print(f"                   {report.long_range} long-range edges skipping over that spine")
+        print(f"acyclic          : {report.acyclic}")
+        print(f"every successor is a key: {report.closed}")
+        print(f"roots            : {report.roots}")
+        print(f"sinks            : {report.sinks}")
+        print(f"widest branching : {report.max_out[0]} with {report.max_out[1]} successors")
+        print(f"most converged-on: {report.max_in[0]} with {report.max_in[1]} predecessors")
+        if report.backward:
+            print(f"backward edges   : {len(report.backward)} (successor at or before its source)")
+            for edge in report.backward:
+                print(f"  {edge.describe()}")
+        if report.gap_disputed:
+            print(f"gap disputed     : {len(report.gap_disputed)} — stated gap and the")
+            print( "                   difference between the keys disagree. The parable")
+            print( "                   preserved and flagged these rather than resolving")
+            print( "                   them; so does this. Both numbers are kept.")
+            for edge in report.gap_disputed:
+                print(f"  {edge.describe()}")
+        return 0
 
     if args.command == "nodes":
         nodes = load_nodes(args.workbook) if args.workbook else load_nodes()

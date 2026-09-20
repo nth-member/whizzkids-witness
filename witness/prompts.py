@@ -86,6 +86,18 @@ def node_brief(node: Node) -> str:
         for record in node.parable_gloss[:4]:
             lines.append("    - " + " | ".join(record))
 
+    if node.successors:
+        lines.append("  The ledger names these successors of this position's key:")
+        for key, gap, date in node.successor_dates[:6]:
+            lines.append(f"    - key {key} on {date} (gap {gap} = {gap * 100:.0f} days)")
+        lines.append(
+            "    These are the ledger's own forward edges. They are context for what it"
+        )
+        lines.append(
+            "    claims comes next -- not a prediction to confirm, and not something to"
+        )
+        lines.append("    search for. Research the date above, nothing else.")
+
     if node.within_7d or node.context_8_30d or node.exact_events:
         lines.append("  Evidence ALREADY on file (do not repeat these):")
         for item in node.exact_events[:6]:

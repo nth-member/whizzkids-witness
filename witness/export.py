@@ -11,16 +11,25 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .axis import verify
-from .ledger import load_nodes
+from .ledger import load_graph, load_nodes
 from .store import FindingStore, RunLog
 
 
 def build_payload(workbook=None, store: FindingStore | None = None, now: datetime | None = None) -> dict:
     now = now or datetime.now(timezone.utc)
     nodes = load_nodes(workbook) if workbook else load_nodes()
+    graph = load_graph(workbook) if workbook else load_graph()
     store = store or FindingStore()
     findings = store.all()
     check = verify(nodes)
+    report = graph.integrity()
+
+    # Which node, if any, carries each BB key -- so a successor in the page can
+    # be followed to the position that draws on it.
+    key_nodes: dict[str, str] = {}
+    for node in nodes:
+        if node.analog_key is not None:
+            key_nodes.setdefault(f"{node.analog_key:g}", node.node_id)
 
     def trim(text: str | None, limit: int = 400) -> str:
         text = (text or "").strip()
@@ -35,6 +44,31 @@ def build_payload(workbook=None, store: FindingStore | None = None, now: datetim
             "checked": check.checked,
             "mismatches": len(check.mismatches),
         },
+        "graph": {
+            "keys": report.keys,
+            "edges": report.edges,
+            "acyclic": report.acyclic,
+            "closed": report.closed,
+            "roots": report.roots,
+            "sinks": report.sinks,
+            "max_out": list(report.max_out),
+            "max_in": list(report.max_in),
+            "backbone": report.backbone,
+            "long_range": report.long_range,
+            "backward": [
+                {"from": e.source, "to": e.target, "gap": e.stated_gap,
+                 "implied": e.implied_gap, "days": e.implied_days}
+                for e in report.backward
+            ],
+            "disputed": [
+                {"from": e.source, "to": e.target, "gap": e.stated_gap,
+                 "implied": e.implied_gap, "days": e.implied_days,
+                 "from_date": e.source_date.date().isoformat(),
+                 "to_date": e.target_date.date().isoformat()}
+                for e in report.gap_disputed
+            ],
+        },
+        "key_nodes": key_nodes,
         "nodes": [
             {
                 "id": n.node_id,
@@ -49,6 +83,12 @@ def build_payload(workbook=None, store: FindingStore | None = None, now: datetim
                 "d7": len(n.within_7d),
                 "d30": len(n.context_8_30d),
                 "gloss": [list(g) for g in n.parable_gloss[:2]],
+                "key": n.analog_key,
+                "succ": [
+                    {"key": k, "gap": g, "date": d,
+                     "disputed": abs((k - (n.analog_key or k)) - g) > 0.005}
+                    for k, g, d in n.successor_dates[:8]
+                ],
                 "items": [
                     {"date": i.date, "off": i.offset, "kind": i.kind,
                      "text": trim(i.description, 260), "url": i.url}

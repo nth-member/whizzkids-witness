@@ -17,7 +17,10 @@ from typing import Any, Iterable
 
 import openpyxl
 
+from .graph import Graph, KeyRecord, parse_pairs
+
 NODES_SHEET = "Nodes · Analog+ · Events"
+KEYS_SHEET = "BB analog index"
 EVENTS_SHEET = "Timeline events"
 LEDGER_SHEET = "Ledger dated items"
 ACW_SHEET = "Agentic Computing War"
@@ -123,6 +126,8 @@ class Node:
     analog: str | None
     analog_fallback: list[tuple[str, ...]]
     strands: int
+    analog_key: float | None
+    successors: list[tuple[float, float]]
     evidence_status: str | None
     chapter: list[tuple[str, ...]] = field(default_factory=list)
     parable_gloss: list[tuple[str, ...]] = field(default_factory=list)
@@ -182,6 +187,16 @@ class Node:
     def evidence_count(self) -> int:
         return len(self.within_7d) + len(self.context_8_30d) + len(self.exact_events)
 
+    @property
+    def successor_dates(self) -> list[tuple[float, float, str]]:
+        """Each successor key with its gap and the date that gap lands on."""
+        from .axis import position_to_timestamp
+
+        return [
+            (key, gap, position_to_timestamp(key).date().isoformat())
+            for key, gap in self.successors
+        ]
+
 
 @dataclass
 class TimelineEvent:
@@ -231,6 +246,11 @@ def load_nodes(workbook_path: Path | str = DEFAULT_WORKBOOK) -> list[Node]:
                         cell(row, "Analog fallback — last BB key carrying text (tuple)")
                     ),
                     strands=_as_int(cell(row, "Strands")),
+                    analog_key=_as_float(cell(row, "Analog BB key")),
+                    # The successors belong to the BB key this node's analog is
+                    # carried by, not to the node: the graph lives on the 399
+                    # keys, and 265 nodes draw on them.
+                    successors=parse_pairs(cell(row, "BB successors (key, gap)")),
                     evidence_status=cell(row, "Ledger evidence status"),
                     chapter=parse_tuples(
                         cell(row, "Design-story chapter (parable §, span, reading)")
@@ -331,3 +351,44 @@ def nodes_by_date(nodes: list[Node]) -> dict[str, list[Node]]:
         if node.date:
             index.setdefault(node.iso_date, []).append(node)
     return index
+
+
+def load_keys(workbook_path: Path | str = DEFAULT_WORKBOOK) -> list[KeyRecord]:
+    """Load all 399 BB keys -- the vertices the successor graph runs over."""
+    wb = openpyxl.load_workbook(workbook_path, read_only=True, data_only=True)
+    try:
+        ws = wb[KEYS_SHEET]
+        rows = ws.iter_rows(values_only=True)
+        index = _header_index(next(rows))
+
+        def cell(row: tuple[Any, ...], name: str) -> Any:
+            position = index.get(name)
+            return row[position] if position is not None and position < len(row) else None
+
+        records: list[KeyRecord] = []
+        for row in rows:
+            if not row or row[index.get("SFO_BB_key", 1)] is None:
+                continue
+            key = _as_float(cell(row, "SFO_BB_key"))
+            if key is None:
+                continue
+            carried = str(cell(row, "Carried by nodes") or "").strip()
+            records.append(
+                KeyRecord(
+                    key=key,
+                    date=str(cell(row, "BB UTC date") or "")[:10],
+                    analog=str(cell(row, "Stated analog — design-story context") or ""),
+                    chapter=str(cell(row, "Design-story chapter (ledger)") or ""),
+                    evidence_status=str(cell(row, "Ledger evidence status") or ""),
+                    carried_by=[c.strip() for c in carried.split(",") if c.strip()],
+                    successors=parse_pairs(cell(row, "Successors (key, gap)")),
+                )
+            )
+        return records
+    finally:
+        wb.close()
+
+
+def load_graph(workbook_path: Path | str = DEFAULT_WORKBOOK) -> Graph:
+    """The successor relation over the 399 keys."""
+    return Graph(load_keys(workbook_path))

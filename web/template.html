@@ -136,6 +136,21 @@ input[type="search"]:focus-visible,button:focus-visible{outline:2px solid var(--
 .empty{color:var(--ink-3);font-size:13.5px;border:1px dashed var(--rule);border-radius:3px;
   padding:12px;margin-top:6px}
 .gloss{border-left:2px solid var(--rule);padding-left:12px;color:var(--ink-2);font-size:13.5px}
+.succ{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.edge{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);background:var(--surface-2);
+  border:1px solid var(--rule);border-radius:3px;padding:5px 9px;cursor:pointer;text-align:left}
+.edge:hover{border-color:var(--accent);color:var(--accent)}
+.edge[data-dead="1"]{cursor:default;opacity:.72}
+.edge[data-dead="1"]:hover{border-color:var(--rule);color:var(--ink-2)}
+.edge .k{color:var(--ink);font-weight:500}
+.edge .disputed{color:var(--near)}
+.graphbar{margin-top:18px;border:1px solid var(--rule);border-radius:4px;background:var(--surface);
+  padding:13px 14px;font-size:13px;color:var(--ink-2)}
+.graphbar b{font-family:var(--mono);font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+.graphbar .flag{display:block;margin-top:8px;padding-top:8px;border-top:1px solid var(--rule-2);
+  font-size:12.5px;color:var(--ink-3)}
+.graphbar .flag code{font-family:var(--mono);font-size:11.5px;color:var(--near)}
+.node.flash{background:var(--accent-soft)}
 
 /* ---- footer ---- */
 footer{margin-top:44px;padding-top:22px;border-top:1px solid var(--rule);color:var(--ink-3);
@@ -162,6 +177,7 @@ footer li{margin-bottom:7px;max-width:74ch}
     <div class="formula">timestamp = 2015-04-30T11:28:41.739Z + 100 days × position</div>
     <div class="verified"><span class="tick"></span><span id="axis-state">axis check</span></div>
     <div class="counts" id="counts"></div>
+    <div class="graphbar" id="graphbar"></div>
     <div class="toolbar">
       <button class="btn" id="to-now">Jump to today</button>
       <button class="btn" id="theme">Theme</button>
@@ -240,6 +256,36 @@ footer li{margin-bottom:7px;max-width:74ch}
     return '<div class="count"><b>' + c[0] + '</b><span>' + c[1] + '</span></div>';
   }).join('');
 
+  var G = DATA.graph || null;
+  var keyNodes = DATA.key_nodes || {};
+  if (G) {
+    var gb = document.getElementById('graphbar');
+    var html = 'The positions are also a directed graph: <b>' + G.edges +
+      '</b> successor edges over <b>' + G.keys + '</b> keys — <b>' + G.backbone +
+      '</b> joining each key to the next in position order, <b>' + G.long_range +
+      '</b> skipping over that spine — ' +
+      (G.acyclic ? 'acyclic' : 'containing a cycle') +
+      (G.closed ? ', every successor itself a key' : ', with successors that are not keys') +
+      '. One root (<b>' + G.roots.join(', ') + '</b>, the Altair position) and one sink (<b>' +
+      G.sinks.join(', ') + '</b>). Widest branching at <b>' + G.max_out[0] + '</b> with <b>' +
+      G.max_out[1] + '</b> successors.';
+    if (G.disputed && G.disputed.length) {
+      html += '<span class="flag">On <b>' + G.disputed.length + '</b> edges the stated gap and ' +
+        'the difference between the keys disagree' +
+        (G.backward && G.backward.length
+          ? ', and <b>' + G.backward.length + '</b> edge names a successor that sits earlier'
+          : '') +
+        '. The parable preserved and flagged these rather than resolving them, because reading ' +
+        'every weight as elapsed time would need clarification of what the weight means. Both ' +
+        'numbers are kept here too: ' +
+        G.disputed.map(function(d){
+          return '<code>' + d.from + '→' + d.to + ' stated ' + d.gap +
+                 ', implied ' + d.implied + '</code>';
+        }).join(' ') + '</span>';
+    }
+    gb.innerHTML = html;
+  }
+
   var runs = DATA.runs || [];
   document.getElementById('sig').textContent = runs.length
     ? 'Last run: ' + runs[runs.length-1].id + ' — ' + runs[runs.length-1].new + ' new findings.'
@@ -278,6 +324,22 @@ footer li{margin-bottom:7px;max-width:74ch}
         h += '<div class="gloss">' + esc(g[2] || g[1] || '') +
              (g[3] ? '<br><span class="when">' + esc(g[3]) + '</span>' : '') + '</div>';
       });
+    }
+
+    if (n.succ && n.succ.length) {
+      h += '<h3>What the ledger says comes next</h3>';
+      h += '<div class="succ">';
+      n.succ.forEach(function(e){
+        var target = keyNodes[String(e.key)];
+        h += '<button class="edge" data-key="' + esc(e.key) + '"' +
+             (target ? ' data-goto="' + esc(target) + '"' : ' data-dead="1"') + '>' +
+             '<span class="k">' + esc(e.key) + '</span> · ' + esc(e.date) +
+             ' · gap ' + esc(e.gap) +
+             (e.disputed ? ' <span class="disputed">(gap disputed)</span>' : '') +
+             (target ? ' · ' + esc(target) : ' · no node here') +
+             '</button>';
+      });
+      h += '</div>';
     }
 
     h += '<div class="grid2"><div>';
@@ -381,6 +443,29 @@ footer li{margin-bottom:7px;max-width:74ch}
   qEl.addEventListener('input', function(){ query = this.value.trim(); apply(); });
 
   spine.addEventListener('click', function(e){
+    var edge = e.target.closest('.edge');
+    if (edge) {
+      var goto = edge.dataset.goto;
+      if (!goto) return;                       // the key carries no node of its own
+      var target = document.getElementById('n-' + goto);
+      if (!target) {                           // it is filtered out of the current view
+        filter = 'all'; query = ''; qEl.value = '';
+        [].forEach.call(document.querySelectorAll('.chip'), function(c){
+          c.setAttribute('aria-pressed', String(c.dataset.filter === 'all'));
+        });
+        apply();
+        target = document.getElementById('n-' + goto);
+      }
+      if (target) {
+        target.classList.add('open');
+        var button = target.querySelector('.nodehead');
+        if (button) button.setAttribute('aria-expanded', 'true');
+        target.scrollIntoView({behavior:'smooth', block:'center'});
+        target.classList.add('flash');
+        setTimeout(function(){ target.classList.remove('flash'); }, 1200);
+      }
+      return;
+    }
     var head = e.target.closest('.nodehead'); if (!head) return;
     var article = head.closest('.node');
     var open = article.classList.toggle('open');
