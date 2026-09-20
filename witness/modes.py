@@ -18,6 +18,7 @@ from .graph import Edge
 from .ledger import Node, load_graph, load_nodes, nodes_by_date, recently_passed, upcoming
 from .research import RawFinding, RawInterval, research_feed, research_interval, research_node
 from .sources import tier_for
+from .usage import Usage
 from .store import (
     Finding,
     FindingStore,
@@ -106,9 +107,11 @@ def _run(
     quiet: list[str] = []
     notes: list[str] = []
     collected: list[Finding] = []
+    spend = Usage()
 
     for node in targets:
         result = research_node(client, node, today, keep_raw=keep_raw)
+        spend.merge(result.usage)
         examined.append(node.node_id)
         if result.findings.quiet or not result.findings.findings:
             quiet.append(node.node_id)
@@ -131,8 +134,12 @@ def _run(
             findings_new=len(new_findings),
             findings_total=len(store.all()),
             notes="; ".join(notes[:8]),
+            usage=spend.to_dict(),
+            cost_usd=spend.cost(model),
         )
     )
+    if spend.calls:
+        notes.append(f"spend: {spend.describe(model)}")
     return ModeResult(mode, run_id, examined, new_findings, quiet, notes)
 
 
@@ -244,6 +251,7 @@ def feed(
     since = (now - timedelta(days=days)).date().isoformat()
 
     result = research_feed(client, since, today, keep_raw=keep_raw)
+    spend = result.usage
     by_date = nodes_by_date(nodes)
 
     collected: list[Finding] = []
@@ -279,8 +287,12 @@ def feed(
             findings_new=len(new_findings),
             findings_total=len(store.all()),
             notes=notes[-1],
+            usage=spend.to_dict(),
+            cost_usd=spend.cost(model),
         )
     )
+    if spend.calls:
+        notes.append(f"spend: {spend.describe(model)}")
     return ModeResult("feed", run_id, sorted({f.node_id for f in collected}), new_findings, [], notes)
 
 
@@ -378,6 +390,7 @@ def intervals(
     examined: list[str] = []
     empty: list[str] = []
     notes: list[str] = []
+    spend = Usage()
 
     for edge in targets:
         source_record = graph.records.get(edge.source)
@@ -390,6 +403,7 @@ def intervals(
             today,
             keep_raw=keep_raw,
         )
+        spend.merge(result.usage)
         examined.append(f"{edge.source}→{edge.target}")
         if result.findings.empty or not result.findings.findings:
             empty.append(f"{edge.source}→{edge.target}")
@@ -413,6 +427,9 @@ def intervals(
                 run_id=run_id, mode="intervals", started_at=now.isoformat(), model=model,
                 nodes_examined=examined, findings_new=len(new_findings),
                 findings_total=len(store.all()), notes="; ".join(notes[:8]),
+                usage=spend.to_dict(), cost_usd=spend.cost(model),
             )
         )
+    if spend.calls:
+        notes.append(f"spend: {spend.describe(model)}")
     return ModeResult("intervals", run_id, examined, new_findings, empty, notes)

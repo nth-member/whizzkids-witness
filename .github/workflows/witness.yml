@@ -3,8 +3,11 @@ name: witness
 # Weekly, and on demand. The first run should be a manual one you watch:
 # every scheduled run spends money at the API.
 on:
-  schedule:
-    - cron: "0 7 * * 1"
+  # Weekly run, switched off until an ANTHROPIC_API_KEY secret exists. Uncomment
+  # to enable it; note that `watch` researches nothing, and so calls nothing,
+  # in any week when no node date has arrived.
+  # schedule:
+  #   - cron: "0 7 * * 1"
   workflow_dispatch:
     inputs:
       mode:

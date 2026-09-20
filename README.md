@@ -156,6 +156,45 @@ server-side tool, and which index sits behind it is not visible from here. `allo
 `blocked_domains` are available on that tool if you later want the policy enforced rather than
 preferred.
 
+## Working it without an API key
+
+The research is two prompts and a structured answer, so it does not have to be the agent that
+does it. Print the prompt, run it in any Claude session, bring the answer back:
+
+    python -m witness prompt --node BB-004 --rules      # the prompt, and the rules of evidence
+    python -m witness ingest --node BB-004 --json f.json # take the answer in
+
+Nothing is relaxed on the way in. The bands are still computed here from two dates, the source
+tier is still judged from the URL, the store is still append-only, and the record says the finding
+arrived this way — `mode: ingest`, with the session named — rather than from a run the agent made
+itself. `witness ingest` imports nothing from the API layer, so it works on a machine with neither
+credentials nor the `anthropic` package.
+
+Edges work the same way: `--edge -5.7342 -5.7145`.
+
+## The control
+
+Something notable happened within seven days of almost any date since 1974. A finding at a ledger
+date therefore means nothing on its own, and a report full of them means less, not more — the more
+you look, the less you see. Only the difference between the ledger's dates and dates that are not
+the ledger's carries information.
+
+    python -m witness prompt --node BB-004 --decoy       # a stable displaced date
+    python -m witness ingest --node BB-004 --decoy 170 --json f.json
+
+A decoy is the same position researched under the same rules at a date displaced 120–900 days —
+far enough that the 30-day window cannot overlap, near enough to stay in the same technological
+era. The evidence already on file is stripped, because it belongs to the real date. Findings carry
+their displacement, so the two populations can never be confused, and `WITNESS.md` prints the
+comparison. Until a control exists, the report says so in place of the table.
+
+## What a run costs
+
+Runs record the API's own usage figures and what they cost at the rates in `witness/usage.py` —
+tokens in and out, cache reads and writes, and searches at $10 per 1,000. Each run's measured
+cost is printed when it finishes and stored on its `RunRecord`, so the numbers in any estimate can
+be checked against what actually happened.
+
 ## The bands
 
 A finding's band is computed in code from two dates — never taken from the model's sense of how

@@ -16,7 +16,7 @@ format in a single request.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
@@ -25,6 +25,7 @@ from pydantic import BaseModel, Field
 
 from .ledger import Node
 from .graph import Edge
+from .usage import Usage
 from .prompts import (
     DISCIPLINE,
     EXTRACTION_INSTRUCTION,
@@ -90,6 +91,7 @@ class ResearchResult:
     findings: FindingSet
     raw_path: Path | None
     searched: int
+    usage: Usage = field(default_factory=Usage)
 
 
 class DryRunClient:
@@ -97,11 +99,12 @@ class DryRunClient:
 
     dry = True
 
-    def research(self, task: str, label: str, system: str | None = None) -> tuple[str, int]:
+    def research(self, task: str, label: str, system: str | None = None):
         return (
             "[dry run] no search performed.\n\n--- task given to the model ---\n"
             + task,
             0,
+            Usage(),
         )
 
     def extract(self, raw_text: str, label: str, schema=None, instruction=None, system=None):
@@ -110,12 +113,12 @@ class DryRunClient:
                 summary="[dry run] nothing extracted; no API call was made.",
                 empty=True,
                 findings=[],
-            )
+            ), Usage()
         return FindingSet(
             summary="[dry run] nothing extracted; no API call was made.",
             quiet=True,
             findings=[],
-        )
+        ), Usage()
 
 
 class WitnessClient:
@@ -130,7 +133,7 @@ class WitnessClient:
         self.effort = effort
         self.search_tool = {**SEARCH_TOOL, "max_uses": max_uses}
 
-    def research(self, task: str, label: str, system: str | None = None) -> tuple[str, int]:
+    def research(self, task: str, label: str, system: str | None = None):
         """Phase one: search the world.  Streamed -- search turns run long."""
         searched = 0
         with self.client.messages.stream(
@@ -161,7 +164,8 @@ class WitnessClient:
                 content = getattr(block, "content", None)
                 if isinstance(content, list):
                     searched += len(content)
-        return "\n".join(chunks).strip(), searched
+        usage = Usage().add_response(message, searches=searched)
+        return "\n".join(chunks).strip(), searched, usage
 
     def extract(
         self, raw_text: str, label: str, schema=None, instruction: str | None = None,
@@ -185,7 +189,7 @@ class WitnessClient:
         )
         if response.stop_reason == "refusal":
             raise RuntimeError(f"{label}: the model declined to structure these notes")
-        return response.parsed_output
+        return response.parsed_output, Usage().add_response(response)
 
 
 def _write_raw(label: str, text: str) -> Path:
@@ -199,30 +203,32 @@ def _write_raw(label: str, text: str) -> Path:
 def research_node(client, node: Node, today: str, keep_raw: bool = True) -> ResearchResult:
     """Search around one node's date, then structure what came back."""
     task = research_task(node, today)
-    raw_text, searched = client.research(task, node.node_id)
+    raw_text, searched, usage = client.research(task, node.node_id)
     raw_path = _write_raw(node.node_id, raw_text) if keep_raw and raw_text else None
-    findings = client.extract(raw_text, node.node_id)
+    findings, extract_usage = client.extract(raw_text, node.node_id)
     return ResearchResult(
         node_id=node.node_id,
         raw_text=raw_text,
         findings=findings,
         raw_path=raw_path,
         searched=searched,
+        usage=usage.merge(extract_usage),
     )
 
 
 def research_feed(client, since: str, today: str, keep_raw: bool = True) -> ResearchResult:
     """Search the recent world with no node in hand.  Real world first."""
     task = feed_task(since, today)
-    raw_text, searched = client.research(task, "feed")
+    raw_text, searched, usage = client.research(task, "feed")
     raw_path = _write_raw("feed", raw_text) if keep_raw and raw_text else None
-    findings = client.extract(raw_text, "feed")
+    findings, extract_usage = client.extract(raw_text, "feed")
     return ResearchResult(
         node_id="—",
         raw_text=raw_text,
         findings=findings,
         raw_path=raw_path,
         searched=searched,
+        usage=usage.merge(extract_usage),
     )
 
 
@@ -233,13 +239,13 @@ def research_interval(
     """Search one edge: what began at its opening and concluded at its closing."""
     task = interval_task(edge, source_analog, target_analog, today)
     label = f"edge-{edge.source}-{edge.target}".replace(".", "_")
-    raw_text, searched = client.research(task, label, system=INTERVAL_DISCIPLINE)
+    raw_text, searched, usage = client.research(task, label, system=INTERVAL_DISCIPLINE)
     raw_path = _write_raw(label, raw_text) if keep_raw and raw_text else None
-    findings = client.extract(
+    findings, extract_usage = client.extract(
         raw_text, label, schema=IntervalSet,
         instruction=INTERVAL_EXTRACTION, system=INTERVAL_DISCIPLINE,
     )
     return ResearchResult(
         node_id=label, raw_text=raw_text, findings=findings,
-        raw_path=raw_path, searched=searched,
+        raw_path=raw_path, searched=searched, usage=usage.merge(extract_usage),
     )

@@ -7,6 +7,8 @@
     python -m witness backfill --limit 2     backward, into the silent nodes
     python -m witness feed --days 7          sideways, the world placed by date
     python -m witness intervals              along the edges, end against end
+    python -m witness prompt --node BB-004    print the research prompt, to run anywhere
+    python -m witness ingest --node BB-004 --json f.json    take the answer back in
     python -m witness render                 rewrite reports/WITNESS.md
     python -m witness build-web              rebuild the browser page
 
@@ -63,6 +65,11 @@ def _report(result) -> None:
         print(f"  quiet nodes    : {', '.join(result.quiet_nodes)}")
     for note in result.notes:
         print(f"  note           : {note}")
+    from .store import RunLog
+
+    last = RunLog().last(result.mode)
+    if last and last.run_id == result.run_id and last.cost_usd is not None:
+        print(f"  measured cost  : ${last.cost_usd:0.4f}  (from the API's own usage figures)")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -126,6 +133,27 @@ def main(argv: list[str] | None = None) -> int:
     p_int.add_argument("--all-edges", action="store_true", help="both kinds")
     p_int.add_argument("--from", dest="from_key", type=float, default=None,
                        help="only edges leaving this key")
+
+    p_prompt = sub.add_parser("prompt", parents=[common],
+                              help="print a research prompt to run in any Claude session")
+    p_prompt.add_argument("--node", default=None)
+    p_prompt.add_argument("--edge", nargs=2, type=float, metavar=("SOURCE", "TARGET"))
+    p_prompt.add_argument("--rules", action="store_true", help="include the rules of evidence")
+    p_prompt.add_argument("--decoy", type=int, nargs="?", const=0, default=None,
+                          metavar="DAYS",
+                          help="displace the date by DAYS to build a control; bare --decoy"
+                               " picks a stable offset for this position")
+
+    p_ing = sub.add_parser("ingest", parents=[common],
+                           help="take researched findings into the store, judged here")
+    p_ing.add_argument("--node", default=None)
+    p_ing.add_argument("--edge", nargs=2, type=float, metavar=("SOURCE", "TARGET"))
+    p_ing.add_argument("--json", dest="json_path", required=True, type=Path)
+    p_ing.add_argument("--by", default="claude-opus-5 (Claude Code session)",
+                       help="what produced these findings — recorded with them")
+    p_ing.add_argument("--note", default="", help="a line for the run log")
+    p_ing.add_argument("--decoy", type=int, default=None, metavar="DAYS",
+                       help="record these against a displaced date, as a control")
 
     sub.add_parser("render", parents=[common], help="rewrite reports/WITNESS.md")
 
@@ -237,6 +265,87 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "nodes":
         nodes = load_nodes(args.workbook) if args.workbook else load_nodes()
         print(render_upcoming_table(nodes, now, args.horizon))
+        return 0
+
+    if args.command == "prompt":
+        from .prompts import (
+            DISCIPLINE, INTERVAL_DISCIPLINE, interval_task, research_task,
+        )
+
+        today = now.date().isoformat()
+        if args.node:
+            nodes = {n.node_id: n for n in (load_nodes(args.workbook) if args.workbook
+                                            else load_nodes())}
+            node = nodes.get(args.node)
+            if node is None:
+                print(f"no such node: {args.node}")
+                return 1
+            if args.decoy is not None:
+                from .decoy import pick_offset, shift_node
+
+                offset = args.decoy or pick_offset(node.node_id)
+                node = shift_node(node, offset)
+                print(f"# CONTROL: {args.node} displaced by {offset:+d} days"
+                      f" — researching {node.iso_date}, which the ledger does not claim.")
+                print(f"# Ingest with: --decoy {offset}\n")
+            if args.rules:
+                print(DISCIPLINE)
+                print("-" * 72)
+            print(research_task(node, today))
+        elif args.edge:
+            graph = load_graph(args.workbook) if args.workbook else load_graph()
+            source, target = args.edge
+            edge = next((e for e in graph.out.get(source, [])
+                         if abs(e.target - target) < 1e-9), None)
+            if edge is None:
+                print(f"no such edge: {source} → {target}")
+                return 1
+            if args.rules:
+                print(INTERVAL_DISCIPLINE)
+                print("-" * 72)
+            print(interval_task(edge,
+                                graph.records[edge.source].analog,
+                                graph.records[edge.target].analog, today))
+        else:
+            print("give --node BB-004 or --edge SOURCE TARGET")
+            return 1
+        return 0
+
+    if args.command == "ingest":
+        from .ingest import IngestError, ingest_interval, ingest_node, read_records
+
+        try:
+            records = read_records(args.json_path)
+            if args.node:
+                fresh = ingest_node(args.node, records, args.by, args.note,
+                                    workbook=args.workbook, store=store,
+                                    decoy=args.decoy)
+                for finding in fresh:
+                    offset = ("same day" if finding.offset_days == 0
+                              else f"{finding.offset_days:+d}d" if finding.offset_days is not None
+                              else finding.date_precision)
+                    print(f"  [{finding.band:<14}] {finding.event_date} ({offset}) "
+                          f"{finding.event_title}")
+                    print(f"       {finding.source_tier} — {finding.source_url}")
+            elif args.edge:
+                fresh = ingest_interval(args.edge[0], args.edge[1], records, args.by,
+                                        args.note, workbook=args.workbook)
+                for finding in fresh:
+                    print(f"  [{finding.shape:<10}] {finding.edge}  {finding.development}")
+                    print(f"       opens {finding.open_date or '—'} "
+                          f"({finding.open_band or 'not anchored'})   "
+                          f"closes {finding.close_date or '—'} "
+                          f"({finding.close_band or 'not anchored'})")
+            else:
+                print("give --node BB-004 or --edge SOURCE TARGET")
+                return 1
+        except IngestError as error:
+            print(f"refused: {error}")
+            return 1
+        print(f"\ningested {len(fresh)} finding(s)")
+        print(f"wrote {write_witness(workbook=args.workbook, store=store, now=now)}")
+        from .web import build_page
+        print(f"wrote {build_page(workbook=args.workbook, store=store, now=now)}")
         return 0
 
     if args.command == "render":

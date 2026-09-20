@@ -66,6 +66,47 @@ def render_witness(
             lines.append(f"| {node.node_id} | {node.position} | {node.iso_date} | {analog} |")
         lines.append("")
 
+    real = [f for f in findings if not f.decoy_offset]
+    decoys = [f for f in findings if f.decoy_offset]
+    if decoys:
+        real_nodes = len({f.node_id for f in real})
+        decoy_nodes = len({f.node_id for f in decoys})
+        lines += [
+            "## Against the control",
+            "",
+            "Something notable happened within seven days of almost any date since 1974, so a",
+            "finding at a ledger date means nothing on its own. These are the same positions",
+            "researched under the same rules at displaced dates the ledger does not claim.",
+            "",
+            "| | positions | findings | exact | within 7d |",
+            "|---|---|---|---|---|",
+            f"| the ledger's dates | {real_nodes} | {len(real)} | "
+            f"{sum(1 for f in real if f.band == 'exact')} | "
+            f"{sum(1 for f in real if f.band == 'within_7d')} |",
+            f"| displaced dates | {decoy_nodes} | {len(decoys)} | "
+            f"{sum(1 for f in decoys if f.band == 'exact')} | "
+            f"{sum(1 for f in decoys if f.band == 'within_7d')} |",
+            "",
+        ]
+        if real_nodes and decoy_nodes:
+            lines += [
+                f"Findings per position: **{len(real) / real_nodes:.2f}** at the ledger's dates,",
+                f"**{len(decoys) / decoy_nodes:.2f}** at displaced ones. Until those differ, and",
+                "differ over enough positions to mean anything, the ledger's dates are not doing",
+                "work that any dates would not do.",
+                "",
+            ]
+    else:
+        lines += [
+            "## Against the control",
+            "",
+            "**No control has been run.** Every finding below is at a date the ledger claims, and",
+            "nothing here says whether a date the ledger does *not* claim would have yielded as",
+            "much. Until that comparison exists, this is a list of coincidences without a",
+            "denominator. Run `witness prompt --node <id> --decoy` to start one.",
+            "",
+        ]
+
     lines += ["## What the witness has found", ""]
     if not findings:
         lines += [

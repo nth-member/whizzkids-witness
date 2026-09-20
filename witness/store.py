@@ -41,6 +41,7 @@ class Finding:
     caution: str
 
     source_tier: str = ""
+    decoy_offset: int | None = None   # None for a real date; days displaced for a control
     analog_at_node: str = ""
     chapter: str = ""
     run_id: str = ""
@@ -56,7 +57,8 @@ class Finding:
 
     def compute_id(self) -> str:
         """Identity is node + event date + source, so the same claim never doubles."""
-        seed = f"{self.node_id}|{self.event_date}|{self.source_url}|{self.event_title}"
+        seed = (f"{self.node_id}|{self.decoy_offset}|{self.event_date}"
+                f"|{self.source_url}|{self.event_title}")
         return hashlib.sha1(seed.encode("utf-8")).hexdigest()[:16]
 
     def to_json(self) -> str:
@@ -119,6 +121,8 @@ class RunRecord:
     findings_new: int
     findings_total: int
     notes: str = ""
+    usage: dict | None = None
+    cost_usd: float | None = None
 
     @staticmethod
     def new_id(mode: str) -> str:
