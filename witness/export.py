@@ -10,7 +10,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .axis import verify
+from .axis import ACTIVE, verify
 from .ledger import applied_errata, load_graph, load_nodes
 from .sources import cited_domains
 from .store import FindingStore, IntervalStore, RunLog
@@ -39,8 +39,13 @@ def build_payload(workbook=None, store: FindingStore | None = None, now: datetim
     return {
         "generated": now.isoformat(),
         "axis": {
-            "epoch": "2015-04-30T11:28:41.739Z",
-            "days_per_unit": 100,
+            "instance": ACTIVE.name,
+            "title": ACTIVE.title,
+            "scale": ACTIVE.scale,
+            "epoch": ACTIVE.epoch.isoformat().replace("+00:00", "Z"),
+            "days_per_unit": ACTIVE.days_per_unit,
+            "gauge": ACTIVE.gauge.get("expression", ""),
+            "gauge_value": ACTIVE.gauge.get("decimal"),
             "verified": check.ok,
             "checked": check.checked,
             "mismatches": len(check.mismatches),

@@ -1,8 +1,14 @@
 """The common time axis.
 
-Every position-bearing source in the SFO-BB corpus sits on one axis:
+Every position-bearing source in this instance sits on one axis:
 
-    timestamp = EPOCH + 100 days * position
+    timestamp = EPOCH + DAYS_PER_UNIT * position
+
+Both constants are a *gauge*, not a property of SFO-BB.  The corpus carries
+eleven named readings over the same positions at four scales (3500D, 2800D/23,
+100D, yG), and this implementation traverses one of them.  Which one, and what
+anchors it, is declared in ``data/instances/<name>.json`` and loaded here, so a
+different slice is a different config rather than a different program.
 
 The workbook's Method sheet records that recomputing the 265 node timestamps
 from their positions reproduces every timestamp printed in REVOTT_Y_24PT50.md
@@ -12,11 +18,53 @@ that appends to a ledger should be able to prove it is reading the same ledger.
 
 from __future__ import annotations
 
+import json
+import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
-EPOCH = datetime(2015, 4, 30, 11, 28, 41, 739000, tzinfo=timezone.utc)
-DAYS_PER_UNIT = 100.0
+INSTANCES = Path(__file__).resolve().parent.parent / "data" / "instances"
+DEFAULT_INSTANCE = os.environ.get("WITNESS_INSTANCE", "whizz-kids")
+
+
+@dataclass(frozen=True)
+class Instance:
+    """One anchoring of the axis: which scale, and what fixes its zero."""
+
+    name: str
+    title: str
+    epoch: datetime
+    days_per_unit: float
+    scale: str
+    reading: str | None
+    gauge: dict
+    sampled: dict
+
+    @property
+    def formula(self) -> str:
+        return f"timestamp = {self.epoch.isoformat()} + {self.days_per_unit:g} days x position"
+
+
+def load_instance(name: str = DEFAULT_INSTANCE) -> Instance:
+    raw = json.loads((INSTANCES / f"{name}.json").read_text(encoding="utf-8"))
+    stamp = raw["epoch"].replace("Z", "+00:00")
+    return Instance(
+        name=raw["name"],
+        title=raw.get("title", raw["name"]),
+        epoch=datetime.fromisoformat(stamp),
+        days_per_unit=float(raw["days_per_unit"]),
+        scale=raw.get("scale", ""),
+        reading=raw.get("reading"),
+        gauge=raw.get("gauge", {}),
+        sampled=raw.get("sampled", {}),
+    )
+
+
+ACTIVE = load_instance()
+
+EPOCH = ACTIVE.epoch
+DAYS_PER_UNIT = ACTIVE.days_per_unit
 
 # The three bands the ledger keeps apart.  They are a research convention of the
 # parable and ledger, not a discovered property of SFO-BB, and they must never

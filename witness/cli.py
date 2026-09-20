@@ -175,6 +175,15 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "verify":
         nodes = load_nodes(args.workbook) if args.workbook else load_nodes()
         check = verify(nodes)
+        from .axis import ACTIVE
+
+        print(f"instance         : {ACTIVE.name} — {ACTIVE.title}, scale {ACTIVE.scale}")
+        print(f"axis             : {ACTIVE.formula}")
+        if ACTIVE.gauge.get("decimal"):
+            print(f"gauge            : {ACTIVE.gauge['fixes']} = {ACTIVE.gauge['value']}"
+                  f" = {ACTIVE.gauge['decimal']}")
+        print(f"sampled          : {ACTIVE.sampled.get('positions')} positions of"
+              f" {ACTIVE.sampled.get('of_keys')} keys")
         print(f"nodes            : {len(nodes)}")
         print(f"axis check       : {'ok — every timestamp reproduced' if check.ok else check.mismatches}")
         print(f"exact-date events: {sum(1 for n in nodes if n.has_exact_event())} nodes")

@@ -14,12 +14,27 @@ framework's designated Super Intelligence position, 82.80, maps to **2037-12-30*
 This repository is the agent that stands at today's date and checks what the whizz kids
 actually wrought — node by node, with sources — and writes down where it found nothing.
 
-## The axis
+## The axis, and which slice this is
 
     timestamp = 2015-04-30T11:28:41.739Z + 100 days × position
 
 `python -m witness verify` recomputes all 265 timestamps from their positions and compares them
 to the ones printed in the source corpus. It reproduces every one.
+
+Both constants above are a **gauge**, not a property of SFO-BB. The corpus carries **eleven named
+readings** over the same positions at four scales — 3500D, 2800D/23, 100D and yG — extracted to
+`data/revott_readings.json`; this implementation traverses the 100D scale on the raw position.
+What fixes its zero is declared in `data/instances/whizz-kids.json`:
+
+    (((((100)×(24.50))+(100×0)+(14160))×(48.3÷17640))+5849+(391÷420)−3880) = 112863/56 = 2015.4107…
+
+so `SFO_BB 0.00` is anchored to this instance and not another. `48.3/17640` reduces to `23/8400`
+and the residual is `23/56`, with 8400 = 56 × 150.
+
+The 400 keys are the domain; the **265 positions are where this slice was sampled**, chosen for
+having reachable real-world targets. Set `WITNESS_INSTANCE=<name>` to run the same machinery
+against a different anchoring — the whole pipeline takes its dates from `position_to_timestamp`,
+so nothing downstream is bound to this one.
 
 ## What it does
 
