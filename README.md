@@ -171,6 +171,24 @@ server-side tool, and which index sits behind it is not visible from here. `allo
 `blocked_domains` are available on that tool if you later want the policy enforced rather than
 preferred.
 
+## Other instances
+
+The gauge can be re-anchored. Substituting **Y = 82.80** — the position this instance designates
+Super Intelligence — into the same expression gives a second axis:
+
+    Ztp = 853177/420 = 2031.3738…    epoch 2031-04-16T11:28:41.739Z
+
+The offset from the whizz-kids epoch is exact and the 23s cancel: 23(82.80−24.50)/84 years ×
+8400/23 days = **5830 days**. The year unit implied throughout is 8400/23 = 365.2174 days.
+
+    python -m witness build-bare --instance again-born
+
+instantiates all **400 keys** on that axis and renders them with nothing attached — position, date,
+days from Ztp, out-degree. No analog, no chapter, no evidence, no correspondence, because none is
+claimed. `data/instances/again-born.json` declares it; `web/again-born.html` is the page.
+
+Spans 1990-11-17 (−147.6) to 2089-06-10 (212.4), with 0.00 at 2031-04-16.
+
 ## Working it without an API key
 
 The research is two prompts and a structured answer, so it does not have to be the agent that

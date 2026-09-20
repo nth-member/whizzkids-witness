@@ -160,6 +160,11 @@ def main(argv: list[str] | None = None) -> int:
     p_web = sub.add_parser("build-web", parents=[common], help="rebuild the single-file browser page")
     p_web.add_argument("--out", type=Path, default=None)
 
+    p_bare = sub.add_parser("build-bare", parents=[common],
+                            help="instantiate an instance's keys with no context attached")
+    p_bare.add_argument("--instance", required=True, help="name in data/instances/")
+    p_bare.add_argument("--out", type=Path, default=None)
+
     args = parser.parse_args(argv)
     for name, value in {
         "workbook": None, "model": MODEL, "effort": "high", "max_uses": 8,
@@ -274,6 +279,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "nodes":
         nodes = load_nodes(args.workbook) if args.workbook else load_nodes()
         print(render_upcoming_table(nodes, now, args.horizon))
+        return 0
+
+    if args.command == "build-bare":
+        from .bare import build_bare
+
+        print(f"wrote {build_bare(args.instance, args.out)}")
         return 0
 
     if args.command == "prompt":
