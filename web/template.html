@@ -1,0 +1,413 @@
+<title>Whizz Kids Witness</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#eef2f1; --surface:#ffffff; --surface-2:#f6f8f7;
+  --ink:#15191a; --ink-2:#4a585b; --ink-3:#77878a;
+  --rule:#d7dedc; --rule-2:#e8edec;
+  --accent:#0f6d63; --accent-soft:#d9ebe7;
+  --exact:#0f6d63; --near:#a96a09; --context:#4d6480; --outside:#7b8486;
+  --future:#6b5ca5; --future-soft:#e7e3f4;
+  --shadow:0 1px 2px rgba(16,32,30,.06), 0 8px 24px rgba(16,32,30,.05);
+  --display:'Fraunces', Georgia, 'Times New Roman', serif;
+  --body:'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0d1211; --surface:#141a19; --surface-2:#19211f;
+    --ink:#e6ece9; --ink-2:#a3b3af; --ink-3:#768784;
+    --rule:#26302e; --rule-2:#1d2726;
+    --accent:#4fd6c0; --accent-soft:#12302c;
+    --exact:#4fd6c0; --near:#e0a44a; --context:#8fb0d6; --outside:#8a9492;
+    --future:#b3a5ee; --future-soft:#221d38;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0d1211; --surface:#141a19; --surface-2:#19211f;
+  --ink:#e6ece9; --ink-2:#a3b3af; --ink-3:#768784;
+  --rule:#26302e; --rule-2:#1d2726;
+  --accent:#4fd6c0; --accent-soft:#12302c;
+  --exact:#4fd6c0; --near:#e0a44a; --context:#8fb0d6; --outside:#8a9492;
+  --future:#b3a5ee; --future-soft:#221d38;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);
+  font-size:15px;line-height:1.55;-webkit-text-size-adjust:100%}
+.wrap{max-width:960px;margin:0 auto;padding-inline:16px;padding-block:0 64px}
+a{color:var(--accent)}
+h1,h2,h3{text-wrap:balance;margin:0}
+
+/* ---- masthead ---- */
+header.top{padding-block:40px 24px;border-bottom:1px solid var(--rule)}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:14px}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(28px,7vw,46px);line-height:1.08;
+  letter-spacing:-.015em;max-width:15ch}
+.standfirst{color:var(--ink-2);margin-top:12px;max-width:62ch}
+.formula{font-family:var(--mono);font-size:12.5px;color:var(--ink-2);background:var(--surface);
+  border:1px solid var(--rule);border-radius:3px;padding:10px 12px;margin-top:18px;
+  overflow-x:auto;white-space:nowrap}
+.verified{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11.5px;
+  color:var(--accent);margin-top:10px}
+.verified .tick{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none}
+
+/* ---- counts ---- */
+.counts{display:flex;flex-wrap:wrap;gap:0;margin-top:26px;border:1px solid var(--rule);
+  border-radius:4px;background:var(--surface);overflow:hidden}
+.count{flex:1 1 128px;padding:13px 14px;border-right:1px solid var(--rule-2)}
+.count:last-child{border-right:0}
+.count b{display:block;font-family:var(--mono);font-size:21px;font-weight:500;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+.count span{font-size:11.5px;color:var(--ink-3);letter-spacing:.02em}
+
+/* ---- controls ---- */
+.controls{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--ground);
+  padding-block:12px;border-bottom:1px solid var(--rule);margin-top:0}
+.searchrow{display:flex;gap:8px;align-items:center}
+input[type="search"]{flex:1;min-width:0;font-family:var(--body);font-size:15px;color:var(--ink);
+  background:var(--surface);border:1px solid var(--rule);border-radius:3px;padding:9px 11px}
+input[type="search"]:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-top:9px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;font-family:var(--mono);font-size:11.5px;letter-spacing:.03em;color:var(--ink-2);
+  background:var(--surface);border:1px solid var(--rule);border-radius:999px;padding:5px 11px;
+  cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--ground)}
+.tally{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);padding-top:9px}
+
+/* ---- the spine ---- */
+.spine{position:relative;margin-top:8px}
+.spine::before{content:"";position:absolute;left:74px;top:0;bottom:0;width:1px;background:var(--rule);}
+.node{position:relative;display:grid;grid-template-columns:74px 1fr;gap:0;
+  border-bottom:1px solid var(--rule-2)}
+.rail{padding:14px 12px 14px 0;text-align:right;font-family:var(--mono);font-size:12px;
+  font-variant-numeric:tabular-nums;color:var(--ink-3);line-height:1.45}
+.rail .pos{color:var(--ink-2);font-weight:500;display:block}
+.rail .yr{font-size:11px}
+.body{padding:14px 0 14px 18px;position:relative;min-width:0}
+.body::before{content:"";position:absolute;left:-4px;top:20px;width:8px;height:8px;border-radius:50%;
+  background:var(--ink-3);border:2px solid var(--ground)}
+.node[data-future="1"] .body::before{background:var(--future)}
+.node[data-witnessed="1"] .body::before{background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.node[data-silent="1"] .body::before{background:var(--ground);border-color:var(--ink-3)}
+.node.open{background:var(--surface)}
+.nodehead{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;cursor:pointer;
+  background:none;border:0;padding:0;margin:0;width:100%;text-align:left;color:inherit;font:inherit}
+.nid{font-family:var(--mono);font-size:12.5px;font-weight:500;color:var(--ink);flex:none}
+.date{font-family:var(--mono);font-size:12px;color:var(--ink-3);flex:none}
+.analog{width:100%;color:var(--ink-2);font-size:14px;margin-top:3px}
+.node.open .analog{color:var(--ink)}
+.marks{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.mark{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;padding:2px 7px;border-radius:2px;
+  border:1px solid currentColor}
+.m-exact{color:var(--exact)} .m-near{color:var(--near)} .m-ctx{color:var(--context)}
+.m-out{color:var(--outside)} .m-future{color:var(--future)} .m-silent{color:var(--ink-3)}
+.m-found{color:var(--exact);background:var(--accent-soft);border-color:transparent}
+
+/* ---- today ---- */
+.today{position:relative;display:grid;grid-template-columns:74px 1fr;
+  border-bottom:1px solid var(--accent)}
+.today .rail{color:var(--accent);font-weight:500;padding-block:10px}
+.today .body{padding-block:10px;color:var(--accent);font-family:var(--mono);font-size:11.5px;
+  letter-spacing:.06em;text-transform:uppercase}
+.today .body::before{background:var(--accent);border-color:var(--ground);width:10px;height:10px;
+  left:-5px;top:14px}
+
+/* ---- detail ---- */
+.detail{display:none;padding:2px 0 20px 18px}
+.node.open .detail{display:block}
+.detail h3{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-3);margin:18px 0 7px;font-weight:500}
+.detail p{margin:0 0 8px;max-width:68ch}
+.grid2{display:grid;grid-template-columns:1fr;gap:0}
+@media (min-width:720px){.grid2{grid-template-columns:1fr 1fr;gap:26px}}
+.item{border-top:1px solid var(--rule-2);padding:9px 0}
+.item:first-of-type{border-top:0}
+.item .when{font-family:var(--mono);font-size:11.5px;color:var(--ink-3)}
+.item .what{font-size:13.5px;color:var(--ink-2)}
+.item a{font-size:12px;word-break:break-word}
+.finding{border-left:2px solid var(--exact);padding:8px 0 8px 12px;margin:10px 0;background:var(--surface-2)}
+.finding .ttl{font-weight:600;font-size:14px}
+.finding .meta{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-top:2px}
+.finding .caution{font-size:12.5px;color:var(--ink-2);margin-top:6px;font-style:italic}
+.empty{color:var(--ink-3);font-size:13.5px;border:1px dashed var(--rule);border-radius:3px;
+  padding:12px;margin-top:6px}
+.gloss{border-left:2px solid var(--rule);padding-left:12px;color:var(--ink-2);font-size:13.5px}
+
+/* ---- footer ---- */
+footer{margin-top:44px;padding-top:22px;border-top:1px solid var(--rule);color:var(--ink-3);
+  font-size:13px}
+footer h2{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:500;margin-bottom:10px}
+footer ul{margin:0;padding-left:18px}
+footer li{margin-bottom:7px;max-width:74ch}
+.sig{margin-top:22px;font-family:var(--mono);font-size:11px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.btn{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);background:var(--surface);
+  border:1px solid var(--rule);border-radius:3px;padding:6px 11px;cursor:pointer}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+@media (prefers-reduced-motion:no-preference){.node{transition:background .12s ease}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">SFO-BB · a witness</div>
+    <h1>Behold what the whizz kids have wrought</h1>
+    <p class="standfirst">A ledger of 265 dated positions, each carrying a stated developmental
+      analog and a chapter of computing's design story. This page holds it against the record:
+      what the ledger claims, what actually happened, and where the days were quiet.</p>
+    <div class="formula">timestamp = 2015-04-30T11:28:41.739Z + 100 days × position</div>
+    <div class="verified"><span class="tick"></span><span id="axis-state">axis check</span></div>
+    <div class="counts" id="counts"></div>
+    <div class="toolbar">
+      <button class="btn" id="to-now">Jump to today</button>
+      <button class="btn" id="theme">Theme</button>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="searchrow">
+      <input type="search" id="q" placeholder="Search analog, chapter, date, node…" autocomplete="off">
+    </div>
+    <div class="chips" id="chips">
+      <button class="chip" data-filter="all" aria-pressed="true">all</button>
+      <button class="chip" data-filter="witnessed" aria-pressed="false">witnessed</button>
+      <button class="chip" data-filter="silent" aria-pressed="false">silent</button>
+      <button class="chip" data-filter="future" aria-pressed="false">still ahead</button>
+      <button class="chip" data-filter="exact" aria-pressed="false">exact-date event</button>
+    </div>
+    <div class="tally" id="tally"></div>
+  </div>
+
+  <main class="spine" id="spine"></main>
+
+  <footer>
+    <h2>Standing cautions</h2>
+    <ul>
+      <li>Same day, within seven days, and 8–30 days are separate categories. They are a research
+        convention of the parable and ledger, not a discovered property of SFO-BB, and are never
+        merged here.</li>
+      <li>Source event dates often use local calendars while SFO timestamps are UTC, so a same-day
+        match does not establish an exact matching instant.</li>
+      <li>Historical proximity and semantic fit are distinct: a date match can be exact while its
+        developmental interpretation is weak.</li>
+      <li>The stated analog is a supplied developmental and symbolic framework. Historical
+        coincidence does not validate causation and does not predict superintelligence.</li>
+      <li>Findings marked <span class="mark m-found">witness</span> were written by a language model
+        with web search, each with its own source and confidence. They are research notes, not a record.</li>
+    </ul>
+    <div class="sig" id="sig"></div>
+  </footer>
+</div>
+
+<script id="payload" type="application/json">/*__PAYLOAD__*/</script>
+<script>
+(function(){
+  "use strict";
+  var DATA = JSON.parse(document.getElementById('payload').textContent);
+  var nodes = DATA.nodes, findings = DATA.findings || [];
+  var byNode = {};
+  findings.forEach(function(f){ (byNode[f.node] = byNode[f.node] || []).push(f); });
+
+  var today = (DATA.generated || '').slice(0,10);
+  var spine = document.getElementById('spine');
+  var esc = function(s){ return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+
+  /* --- masthead numbers --- */
+  var ax = DATA.axis || {};
+  document.getElementById('axis-state').textContent = ax.verified
+    ? 'axis verified — all ' + ax.checked + ' timestamps reproduced from their positions'
+    : (ax.mismatches + ' timestamps do not reproduce');
+
+  // Future dates cannot hold evidence, so they are not silent -- they are simply
+  // not due yet.  Counting them here would disagree with the 'silent' filter.
+  var silent = nodes.filter(function(n){
+    return !n.exact && !n.d7 && !n.d30 && !n.future; }).length;
+  var future = nodes.filter(function(n){ return n.future; }).length;
+  var exact  = nodes.filter(function(n){ return n.exact > 0; }).length;
+  var counts = [
+    [nodes.length, 'positions on the axis'],
+    [future, 'dates still ahead'],
+    [exact, 'with an exact-date event'],
+    [silent, 'past dates, no evidence'],
+    [findings.length, 'witness findings']
+  ];
+  document.getElementById('counts').innerHTML = counts.map(function(c){
+    return '<div class="count"><b>' + c[0] + '</b><span>' + c[1] + '</span></div>';
+  }).join('');
+
+  var runs = DATA.runs || [];
+  document.getElementById('sig').textContent = runs.length
+    ? 'Last run: ' + runs[runs.length-1].id + ' — ' + runs[runs.length-1].new + ' new findings.'
+    : 'The witness has not run yet. Every finding area below is honestly empty.';
+
+  /* --- one node --- */
+  function marks(n){
+    var out = [];
+    if (n.future) out.push('<span class="mark m-future">still ahead</span>');
+    if (n.exact)  out.push('<span class="mark m-exact">' + n.exact + ' exact</span>');
+    if (n.d7)     out.push('<span class="mark m-near">' + n.d7 + ' within 7d</span>');
+    if (n.d30)    out.push('<span class="mark m-ctx">' + n.d30 + ' context</span>');
+    if (!n.future && !n.exact && !n.d7 && !n.d30) out.push('<span class="mark m-silent">silent</span>');
+    var f = byNode[n.id];
+    if (f) out.push('<span class="mark m-found">' + f.length + ' witness</span>');
+    return out.join('');
+  }
+
+  function bandClass(b){
+    if (b === 'exact') return 'm-exact';
+    if (b === 'within_7d') return 'm-near';
+    if (b === 'context_8_30d') return 'm-ctx';
+    return 'm-out';
+  }
+
+  function detail(n){
+    var h = '';
+    h += '<h3>Stated analog</h3><p>' + esc(n.analog) + '</p>';
+    if (n.chapter) {
+      h += '<h3>Design-story chapter</h3><p><strong>' + esc(n.chapter) + '</strong></p>';
+      if (n.reading) h += '<p>' + esc(n.reading) + '</p>';
+    }
+    if (n.gloss && n.gloss.length) {
+      h += '<h3>Parable gloss</h3>';
+      n.gloss.forEach(function(g){
+        h += '<div class="gloss">' + esc(g[2] || g[1] || '') +
+             (g[3] ? '<br><span class="when">' + esc(g[3]) + '</span>' : '') + '</div>';
+      });
+    }
+
+    h += '<div class="grid2"><div>';
+    h += '<h3>Evidence on file</h3>';
+    if (n.items && n.items.length) {
+      n.items.forEach(function(i){
+        h += '<div class="item"><div class="when">' + esc(i.date) + ' · ' + esc(i.off) +
+             ' · ' + esc(i.kind) + '</div><div class="what">' + esc(i.text) + '</div>' +
+             (i.url ? '<a href="' + esc(i.url) + '" target="_blank" rel="noopener">' +
+               esc(i.url.replace(/^https?:\/\//,'').slice(0,54)) + '</a>' : '') + '</div>';
+      });
+    } else {
+      h += '<div class="empty">' + (n.future
+        ? 'This date has not arrived. Nothing can stand here yet.'
+        : 'The ledger records nothing within thirty days of this date.') + '</div>';
+    }
+    h += '</div><div>';
+
+    h += '<h3>What the witness found</h3>';
+    var fs = byNode[n.id];
+    if (fs && fs.length) {
+      fs.forEach(function(f){
+        var off = f.off === 0 ? 'same day'
+          : (f.off === null || f.off === undefined ? f.precision + '-precision'
+             : (f.off > 0 ? '+' : '') + f.off + ' days');
+        h += '<div class="finding"><div class="ttl">' + esc(f.title) + '</div>' +
+             '<div class="meta">' + esc(f.date) + ' · ' + off +
+             ' · <span class="' + bandClass(f.band) + '">' + esc(f.band) + '</span>' +
+             ' · ' + esc(f.confidence) + '</div>' +
+             '<p>' + esc(f.what) + '</p>' +
+             (f.why ? '<p>' + esc(f.why) + '</p>' : '') +
+             '<div class="caution">Caution: ' + esc(f.caution) + '</div>' +
+             (f.url ? '<a href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
+               esc(f.source || f.url) + '</a>' : '') + '</div>';
+      });
+    } else {
+      h += '<div class="empty">Not yet witnessed. Run <code>python -m witness ' +
+           (n.future ? 'watch' : 'backfill') + '</code> to look.</div>';
+    }
+    h += '</div></div>';
+    return h;
+  }
+
+  function render(list){
+    var html = '', placed = false;
+    list.forEach(function(n){
+      if (!placed && today && n.date > today) {
+        html += '<div class="today"><div class="rail">' + esc(today) +
+                '</div><div class="body">you are here</div></div>';
+        placed = true;
+      }
+      var attrs = '';
+      if (n.future) attrs += ' data-future="1"';
+      if (byNode[n.id]) attrs += ' data-witnessed="1"';
+      if (!n.exact && !n.d7 && !n.d30 && !n.future) attrs += ' data-silent="1"';
+      html += '<article class="node"' + attrs + ' id="n-' + esc(n.id) + '">' +
+        '<div class="rail"><span class="pos">' + esc(n.pos) + '</span>' +
+        '<span class="yr">' + esc((n.date||'').slice(0,4)) + '</span></div>' +
+        '<div class="body"><button class="nodehead" aria-expanded="false">' +
+        '<span class="nid">' + esc(n.id) + '</span>' +
+        '<span class="date">' + esc(n.date) + '</span>' +
+        '<span class="analog">' + esc(n.analog) + '</span>' +
+        '<span class="marks">' + marks(n) + '</span></button>' +
+        '<div class="detail">' + detail(n) + '</div></div></article>';
+    });
+    if (!placed && today) {
+      html += '<div class="today"><div class="rail">' + esc(today) +
+              '</div><div class="body">you are here</div></div>';
+    }
+    spine.innerHTML = html || '<div class="empty" style="margin:24px 0">No positions match.</div>';
+    document.getElementById('tally').textContent =
+      list.length + ' of ' + nodes.length + ' positions' +
+      (list.length ? ' · ' + list.filter(function(n){return n.future;}).length + ' still ahead' : '');
+  }
+
+  /* --- filtering --- */
+  var filter = 'all', query = '';
+  function apply(){
+    var q = query.toLowerCase();
+    render(nodes.filter(function(n){
+      if (filter === 'witnessed' && !byNode[n.id]) return false;
+      if (filter === 'silent' && (n.exact || n.d7 || n.d30 || n.future)) return false;
+      if (filter === 'future' && !n.future) return false;
+      if (filter === 'exact' && !n.exact) return false;
+      if (!q) return true;
+      return (n.id + ' ' + n.date + ' ' + n.pos + ' ' + n.analog + ' ' + n.chapter +
+              ' ' + (n.status||'')).toLowerCase().indexOf(q) !== -1;
+    }));
+  }
+
+  document.getElementById('chips').addEventListener('click', function(e){
+    var chip = e.target.closest('.chip'); if (!chip) return;
+    filter = chip.dataset.filter;
+    [].forEach.call(this.querySelectorAll('.chip'), function(c){
+      c.setAttribute('aria-pressed', String(c === chip));
+    });
+    apply();
+  });
+
+  var qEl = document.getElementById('q');
+  qEl.addEventListener('input', function(){ query = this.value.trim(); apply(); });
+
+  spine.addEventListener('click', function(e){
+    var head = e.target.closest('.nodehead'); if (!head) return;
+    var article = head.closest('.node');
+    var open = article.classList.toggle('open');
+    head.setAttribute('aria-expanded', String(open));
+  });
+
+  document.getElementById('to-now').addEventListener('click', function(){
+    var marker = document.querySelector('.today');
+    if (marker) marker.scrollIntoView({behavior:'smooth', block:'center'});
+  });
+
+  document.getElementById('theme').addEventListener('click', function(){
+    var root = document.documentElement;
+    var now = root.getAttribute('data-theme');
+    var dark = now ? now === 'dark'
+      : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    root.setAttribute('data-theme', dark ? 'light' : 'dark');
+    try { localStorage.setItem('wkw-theme', dark ? 'light' : 'dark'); } catch (err) {}
+  });
+  try {
+    var saved = localStorage.getItem('wkw-theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+  } catch (err) {}
+
+  apply();
+  var marker = document.querySelector('.today');
+  if (marker) marker.scrollIntoView({block:'center'});
+  window.scrollTo(0, 0);
+})();
+</script>

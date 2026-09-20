@@ -1,0 +1,70 @@
+name: witness
+
+# Weekly, and on demand. The first run should be a manual one you watch:
+# every scheduled run spends money at the API.
+on:
+  schedule:
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "watch, backfill or feed"
+        default: watch
+        type: choice
+        options: [watch, backfill, feed]
+      limit:
+        description: "nodes to research in this run"
+        default: "2"
+      dry_run:
+        description: "build the prompts without calling the API"
+        default: false
+        type: boolean
+
+jobs:
+  witness:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Verify the axis before trusting anything downstream
+        run: python -m witness verify
+
+      - name: Look
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          MODE="${{ github.event.inputs.mode || 'watch' }}"
+          LIMIT="${{ github.event.inputs.limit || '2' }}"
+          DRY=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then DRY="--dry-run"; fi
+          if [ "$MODE" = "feed" ]; then
+            python -m witness $DRY feed --days 7
+          else
+            python -m witness $DRY "$MODE" --limit "$LIMIT"
+          fi
+
+      - name: Rebuild the report and the page
+        run: |
+          python -m witness render
+          python -m witness build-web
+
+      - name: Commit what was found
+        run: |
+          git config user.name "whizzkids-witness"
+          git config user.email "noreply@github.com"
+          git add findings reports web/index.html
+          if git diff --staged --quiet; then
+            echo "The witness found nothing new. Nothing to commit."
+          else
+            git commit -m "witness: $(date -u +%Y-%m-%d) run"
+            git push
+          fi
