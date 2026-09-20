@@ -56,17 +56,25 @@ def parse_pairs(cell) -> list[tuple[float, float]]:
 class Edge:
     """One successor relation, with both readings of its gap.
 
-    ``stated`` is False for an edge the workbook does not list but the default
-    predecessor rule implies: every key's default predecessor is the key
-    standing temporally just before it, so consecutive positions are joined
-    whether or not the source spells the edge out.  Derived edges are marked
-    everywhere they appear and are never counted as something the ledger said.
+    Two flags, and they are independent.
+
+    ``default`` marks the ledger's own backbone: every key has a default
+    connection to the key standing immediately next to it in time, and all 399
+    of those connections hold whether or not a successor cell records them.
+
+    ``stated`` marks what the workbook actually writes down.  396 of the default
+    connections are also stated; 3 are not, and hold by the rule alone.  The
+    remaining 305 stated edges are long-range -- they skip over the backbone and
+    are not default connections at all.
+
+    An edge that is not stated is never counted as something the ledger said.
     """
 
     source: float
     target: float
     stated_gap: float
     stated: bool = True
+    default: bool = False
 
     @property
     def implied_gap(self) -> float:
@@ -106,7 +114,7 @@ class Edge:
                 f"{arrow}  gap {self.stated_gap}  "
                 f"{self.implied_days:,.0f} days "
                 f"({self.source_date.date()} → {self.target_date.date()})  "
-                f"[implied by the default predecessor rule]"
+                f"[backbone, not written down]"
             )
         span = (
             f"{self.implied_days:,.0f} days "
@@ -149,6 +157,8 @@ class IntegrityReport:
     long_range: int
     stated_edges: int
     derived_edges: int
+    default_connections: int
+    default_also_stated: int
 
     @property
     def acyclic(self) -> bool:
@@ -174,9 +184,19 @@ class Graph:
         self.edges: list[Edge] = []
         self.out: dict[float, list[Edge]] = defaultdict(list)
         self.into: dict[float, list[Edge]] = defaultdict(list)
+        order = sorted(self.records)
+        self.next_key: dict[float, float] = dict(zip(order, order[1:]))
         for record in self.records.values():
             for target, gap in record.successors:
-                self._add(Edge(record.key, target, gap))
+                self._add(
+                    Edge(
+                        record.key,
+                        target,
+                        gap,
+                        default=abs(self.next_key.get(record.key, float("nan")) - target)
+                        < 1e-9,
+                    )
+                )
         if imply_backbone:
             self._imply_backbone()
 
@@ -186,16 +206,35 @@ class Graph:
         self.into[edge.target].append(edge)
 
     def _imply_backbone(self) -> list[Edge]:
-        """Join each key to the one standing temporally just before it."""
-        order = sorted(self.records)
+        """Complete the backbone.
+
+        The default connection from each key to its immediate next holds for all
+        399 pairs; this adds the ones no successor cell happens to record, so the
+        backbone is whole however the workbook was written.
+        """
         derived: list[Edge] = []
-        for earlier, later in zip(order, order[1:]):
+        for earlier, later in self.next_key.items():
             if any(abs(e.target - later) < 1e-9 for e in self.out.get(earlier, [])):
                 continue
-            edge = Edge(earlier, later, round(later - earlier, 6), stated=False)
+            edge = Edge(earlier, later, round(later - earlier, 6), stated=False, default=True)
             self._add(edge)
             derived.append(edge)
         return derived
+
+    def default_edge(self, key: float) -> Edge | None:
+        """The default connection out of this key: to the one immediately next."""
+        target = self.next_key.get(key)
+        if target is None:
+            return None
+        for edge in self.out.get(key, []):
+            if abs(edge.target - target) < 1e-9:
+                return edge
+        return None
+
+    @property
+    def default_edges(self) -> list[Edge]:
+        """All 399 default connections, stated or not."""
+        return [e for e in self.edges if e.default]
 
     @property
     def stated_edges(self) -> list[Edge]:
@@ -327,4 +366,6 @@ class Graph:
             long_range=len(long_range),
             stated_edges=len(self.stated_edges),
             derived_edges=len(self.derived_edges),
+            default_connections=len(backbone),
+            default_also_stated=sum(1 for e in backbone if e.stated),
         )

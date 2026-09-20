@@ -44,42 +44,29 @@ expected result.
 
 ## The edge set
 
-The positions are not only a sequence. Each of the **400** BB keys names its successors with a
-stated gap. With the default predecessor rule below, that makes **704** edges in a directed graph:
-one root, **−147.6** (the Altair position, 1974-12-01), one sink, **212.4**, and no cycles. The widest branching is
-at **0.00** — the epoch itself, 2015-04-30 — which fans out to eighteen successors. The most
-converged-on key is **24.41**, with seven predecessors.
+The positions are not only a sequence, they are a directed graph. Two kinds of relation run over
+the **400** BB keys:
 
-The edge set splits into a **backbone** of **399** edges joining each key to the next in position
-order, and **305 long-range edges** skipping over that spine. `witness edges` reports the split.
+- a **backbone** of **399** connections, each key to the one immediately next to it in time. This
+  holds by default for every key, whether or not a successor cell records it; 396 are also written
+  down in the workbook, 3 are not.
+- **305 long-range** stated edges, which skip over the backbone.
 
-### The default predecessor rule
+**704** relations in total: one root, **−147.6** (the Altair position, 1974-12-01), one sink,
+**212.4**, and no cycles. The widest branching is at **0.00** — the epoch itself, 2015-04-30 —
+with nineteen successors. The most converged-on key is **24.41**, with seven predecessors.
 
-A key's immediate predecessor is, by default, the key standing temporally just before it. So
-consecutive positions are joined whether or not the workbook spells the edge out, and the backbone
-is complete by construction.
-
-Three edges come from the rule rather than from the file, and all three sit in the epoch knot the
-merged row damaged:
-
-| Implied edge | Gap | Span |
-|---|---|---|
-| `−1.916 → −0.18` | 1.736 | 2014-10-20 → 2015-04-12 |
-| `0.0 → 0.18` | 0.18 | 2015-04-30 → 2015-05-18 |
-| `0.18 → 0.33` | 0.15 | 2015-05-18 → 2015-06-02 |
-
-The first of those gives −0.18 its predecessor, so the graph has one root again rather than two.
-
-Derived edges are never counted as something the ledger said: they carry `stated = False`, print
-as *implied by the default predecessor rule*, and show dashed and marked *(implied)* in the page.
-`witness edges --stated-only` drops them and reports the graph exactly as the workbook states it —
-701 edges, a 396-edge backbone, two roots.
-
-    python -m witness edges                      the graph and its anomalies
-    python -m witness edges --from 0.0 --depth 1 walk forward from a key
+    python -m witness edges                       the graph, its backbone and its anomalies
+    python -m witness edges --from 0.0 --depth 1  walk forward from a key
     python -m witness edges --from -147.6 --chain follow one path to the sink
+    python -m witness edges --stated-only         only what the workbook writes down
 
-The graph runs over the **399 keys**, not the 265 nodes: a node is attached to the key standing at
+The three backbone links the workbook does not write down are `−1.916 → −0.18` (gap 1.736),
+`0.0 → 0.18` (0.18) and `0.18 → 0.33` (0.15) — all three in the epoch knot that the merged row
+below damaged. They are marked wherever they appear, so nothing unwritten is passed off as stated.
+`--stated-only` drops them: 701 edges, a 396-link backbone, and −0.18 without a predecessor.
+
+The graph runs over the **400 keys**, not the 265 nodes: a node is attached to the key standing at
 its moment, and 212 keys are carried by a node. `Node.successors` gives the successors of the key
 a node's analog is carried by — the distinction is kept rather than collapsed.
 

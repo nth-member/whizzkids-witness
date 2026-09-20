@@ -163,6 +163,8 @@ def main(argv: list[str] | None = None) -> int:
                 return 1
             print(f"{record.key}  {record.date}  {record.analog[:70]}")
             print(f"  in {graph.in_degree(record.key)} / out {graph.out_degree(record.key)}")
+            default = graph.default_edge(record.key)
+            print(f"  default next: {default.describe() if default else 'none — this is the sink'}")
             for edge in graph.predecessors(record.key):
                 print(f"  ← {edge.describe()}")
             if args.chain:
@@ -184,18 +186,14 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"    reported by {erratum.reported_by}, {erratum.reported_on};"
                       f" declared in data/errata.json")
             print()
+        rule_only = report.default_connections - report.default_also_stated
         print(f"keys             : {report.keys}")
-        print(f"edges            : {report.edges} — {report.backbone} joining each key to the")
-        print( "                   next in position order, and")
-        print(f"                   {report.long_range} long-range edges skipping over that spine")
-        if report.derived_edges:
-            print(f"  stated           : {report.stated_edges}")
-            print(f"  implied          : {report.derived_edges} — by the default predecessor rule,")
-            print( "                     which joins each key to the one standing temporally")
-            print( "                     just before it. Listed below, and marked wherever")
-            print( "                     they appear. Use --stated-only to leave them out.")
-            for edge in graph.derived_edges:
-                print(f"    {edge.describe()}")
+        print(f"relations        : {report.edges}")
+        print(f"  backbone       : {report.default_connections} — each key to the one immediately"
+              " next to it")
+        print(f"                   ({report.default_also_stated} also stated in the workbook,"
+              f" {rule_only} by default alone)")
+        print(f"  long-range     : {report.long_range} stated edges skipping over the backbone")
         print(f"acyclic          : {report.acyclic}")
         print(f"every successor is a key: {report.closed}")
         print(f"roots            : {report.roots}")
@@ -206,6 +204,11 @@ def main(argv: list[str] | None = None) -> int:
             print(f"backward edges   : {len(report.backward)} (successor at or before its source)")
             for edge in report.backward:
                 print(f"  {edge.describe()}")
+        if graph.derived_edges:
+            print("backbone links the workbook does not write down:")
+            for edge in graph.derived_edges:
+                print(f"  {edge.source} → {edge.target}  gap {edge.stated_gap}"
+                      f"  ({edge.source_date.date()} → {edge.target_date.date()})")
         if report.gap_disputed:
             print(f"gap disputed     : {len(report.gap_disputed)} — stated gap and the")
             print( "                   difference between the keys disagree. The parable")

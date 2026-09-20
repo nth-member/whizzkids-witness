@@ -57,6 +57,8 @@ def build_payload(workbook=None, store: FindingStore | None = None, now: datetim
             "long_range": report.long_range,
             "stated_edges": report.stated_edges,
             "derived_edges": report.derived_edges,
+            "default_connections": report.default_connections,
+            "default_also_stated": report.default_also_stated,
             "derived": [
                 {"from": e.source, "to": e.target, "gap": e.stated_gap,
                  "from_date": e.source_date.date().isoformat(),
@@ -99,19 +101,19 @@ def build_payload(workbook=None, store: FindingStore | None = None, now: datetim
                 "key": n.analog_key,
                 "succ": [
                     {"key": k, "gap": g, "date": d,
-                     "disputed": abs((k - (n.analog_key or k)) - g) > 0.005,
-                     "implied": False}
+                     "disputed": abs((k - (n.analog_key or k)) - g) > 0.005}
                     for k, g, d in n.successor_dates[:8]
-                ] + [
-                    # Edges this node's key gains from the default predecessor rule.
-                    {"key": e.target, "gap": e.stated_gap,
-                     "date": e.target_date.date().isoformat(),
-                     "disputed": False, "implied": True}
-                    for e in (
-                        graph.out.get(n.analog_key, []) if n.analog_key is not None else []
-                    )
-                    if not e.stated
                 ],
+                # The default connection out of this node's key: to the key
+                # standing immediately next in time, whether or not a successor
+                # cell records it.
+                "dflt": (
+                    lambda e: e and {
+                        "key": e.target, "gap": e.stated_gap,
+                        "date": e.target_date.date().isoformat(),
+                        "stated": e.stated,
+                    }
+                )(graph.default_edge(n.analog_key) if n.analog_key is not None else None),
                 "items": [
                     {"date": i.date, "off": i.offset, "kind": i.kind,
                      "text": trim(i.description, 260), "url": i.url}

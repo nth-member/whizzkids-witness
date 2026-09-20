@@ -266,11 +266,13 @@ footer li{margin-bottom:7px;max-width:74ch}
   if (G) {
     var gb = document.getElementById('graphbar');
     var html = 'The positions are also a directed graph: <b>' + G.edges +
-      '</b> successor edges over <b>' + G.keys + '</b> keys (<b>' + G.stated_edges +
-      '</b> stated, <b>' + G.derived_edges + '</b> implied by the default predecessor rule, ' +
-      'which joins each key to the one standing temporally just before it) — <b>' + G.backbone +
-      '</b> joining each key to the next in position order, <b>' + G.long_range +
-      '</b> skipping over that spine — ' +
+      '</b> relations over <b>' + G.keys + '</b> keys: a backbone of <b>' + G.default_connections +
+      '</b> joining each key to the one immediately next to it, and <b>' + G.long_range +
+      '</b> long-range edges skipping over it. ' +
+      (G.derived_edges
+        ? '<b>' + G.derived_edges + '</b> backbone links are not written down in the workbook. '
+        : '') +
+      'The graph is ' +
       (G.acyclic ? 'acyclic' : 'containing a cycle') +
       (G.closed ? ', every successor itself a key' : ', with successors that are not keys') +
       '. One root (<b>' + G.roots.join(', ') + '</b>, the Altair position) and one sink (<b>' +
@@ -343,18 +345,28 @@ footer li{margin-bottom:7px;max-width:74ch}
       });
     }
 
+    if (n.dflt) {
+      h += '<h3>Next in the backbone</h3>';
+      h += '<div class="succ">';
+      var dt = keyNodes[String(n.dflt.key)];
+      h += '<button class="edge"' + (n.dflt.stated ? '' : ' data-implied="1"') +
+           (dt ? ' data-goto="' + esc(dt) + '"' : ' data-dead="1"') + '>' +
+           '<span class="k">' + esc(n.dflt.key) + '</span> · ' + esc(n.dflt.date) +
+           ' · gap ' + esc(n.dflt.gap) +
+           (n.dflt.stated ? '' : ' <span class="implied">(not written down)</span>') +
+           (dt ? ' · ' + esc(dt) : ' · no node here') + '</button></div>';
+    }
+
     if (n.succ && n.succ.length) {
-      h += '<h3>What the ledger says comes next</h3>';
+      h += '<h3>Successors the workbook states</h3>';
       h += '<div class="succ">';
       n.succ.forEach(function(e){
         var target = keyNodes[String(e.key)];
         h += '<button class="edge" data-key="' + esc(e.key) + '"' +
-             (e.implied ? ' data-implied="1"' : '') +
              (target ? ' data-goto="' + esc(target) + '"' : ' data-dead="1"') + '>' +
              '<span class="k">' + esc(e.key) + '</span> · ' + esc(e.date) +
              ' · gap ' + esc(e.gap) +
              (e.disputed ? ' <span class="disputed">(gap disputed)</span>' : '') +
-             (e.implied ? ' <span class="implied">(implied)</span>' : '') +
              (target ? ' · ' + esc(target) : ' · no node here') +
              '</button>';
       });
