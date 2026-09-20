@@ -26,6 +26,7 @@ to the ones printed in the source corpus. It reproduces every one.
     python -m witness watch      # forward: dates arriving, and ones that just passed
     python -m witness backfill   # backward: past nodes the ledger left silent
     python -m witness feed       # sideways: the recent world, placed against the ledger by date
+    python -m witness intervals  # along the edges: what began at one end and closed at the other
 
 All three end the same way: sourced findings appended to `findings/findings.jsonl`, each one
 placed in a band, and `reports/WITNESS.md` rewritten.
@@ -103,6 +104,57 @@ so the source states no edge into −0.18. The default predecessor rule supplies
 The edges reach the agent as context, never as a target: a node's brief names what the ledger says
 comes next, explicitly marked as not a prediction to confirm and not something to search for. The
 research is still about one date.
+
+## Along the edges
+
+An edge is not a date, it is a claim about a span: that one position leads to another across a
+stated gap. `witness intervals` tests it by looking for a single development that **began** at or
+near the opening date and **concluded** at or near the closing date.
+
+The same-day / ±7d / 8–30d bands do not apply to a span, so intervals have their own rules, and
+they are stricter in one specific way: **the endpoints carry the claim, not the middle.** Over a
+gap of years something always happened in between — that is arithmetic, not correspondence. Each
+end is judged separately, by offset, in code.
+
+| Shape | Meaning |
+|---|---|
+| `both_ends` | a development that starts at one end and finishes at the other |
+| `one_end` | only the opening or only the closing is anchored |
+| `span_only` | the duration matches, the endpoints do not align |
+| `neither` | two dated events with no thread between them |
+
+Long-range edges are tested first, because those are the ledger's own non-obvious claims — it is
+asserting a relation between positions that are *not* adjacent. Backbone links only join
+consecutive positions, so they assert much less; `--backbone` tests them anyway.
+
+Candidates are ordered **shortest span first**: a coincidence across four days is expensive to
+find, one across a decade is not. Of 305 long-range edges, 290 have closed and are unwitnessed;
+the shortest are `−5.7342 → −5.7145` (2 days) and `24.41 → 24.447` (4 days). An edge whose closing
+date is still in the future is never researched.
+
+Interval findings live in `findings/intervals.jsonl`, separate from the dated correspondences,
+because they are a different kind of claim and are not mixed in with them.
+
+## Sources
+
+The search is **not restricted**. The tool is left open so the witness can find what the corpus
+never happened to favour — a witness that can only read what the ledger already reads cannot tell
+you anything new.
+
+But the ledger has a legible source discipline of its own: **1,074 citations across 56 domains**,
+led by wired.com (the archive spine, queried by dated sitemap), then the primary announcements of
+the organisations themselves — openai.com, deepmind.google, apple.com, arxiv.org, news.microsoft.com,
+anthropic.com — and a few computing-history archives. That list is derived from the workbook at
+run time, not hardcoded, and named to the researcher as preferred.
+
+Every finding is then marked in code, from its URL, as resting **in the ledger's own sources** or
+**beyond the ledger's sources**. As with the bands, that judgement is arithmetic on data, never
+the model's account of where it looked.
+
+Where the searches physically run is Anthropic's infrastructure: `web_search_20260209` is a
+server-side tool, and which index sits behind it is not visible from here. `allowed_domains` /
+`blocked_domains` are available on that tool if you later want the policy enforced rather than
+preferred.
 
 ## The bands
 

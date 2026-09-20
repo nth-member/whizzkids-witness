@@ -12,7 +12,8 @@ from pathlib import Path
 
 from .axis import verify
 from .ledger import applied_errata, load_graph, load_nodes
-from .store import FindingStore, RunLog
+from .sources import cited_domains
+from .store import FindingStore, IntervalStore, RunLog
 
 
 def build_payload(workbook=None, store: FindingStore | None = None, now: datetime | None = None) -> dict:
@@ -130,10 +131,27 @@ def build_payload(workbook=None, store: FindingStore | None = None, now: datetim
                 "off": f.offset_days, "band": f.band, "what": f.what_happened,
                 "why": f.why_it_matters, "caution": f.caution, "url": f.source_url,
                 "source": f.source_name, "confidence": f.confidence, "mode": f.mode,
+             "tier": f.source_tier,
                 "created": f.created_at, "model": f.model,
             }
             for f in findings
         ],
+        "intervals": [
+            {"src": f.edge_source, "tgt": f.edge_target, "opens": f.opens,
+             "closes": f.closes, "span": f.span_days, "dev": f.development,
+             "shape": f.shape, "what": f.what_happened,
+             "open_event": f.open_event, "open_date": f.open_date,
+             "open_band": f.open_band, "open_url": f.open_url,
+             "close_event": f.close_event, "close_date": f.close_date,
+             "close_band": f.close_band, "close_url": f.close_url,
+             "caution": f.caution, "confidence": f.confidence}
+            for f in IntervalStore().all()
+        ],
+        "sources": {
+            "policy": "open search, the ledger's own domains preferred",
+            "domains": [d for d, _ in cited_domains()][:24],
+            "cited": sum(c for _, c in cited_domains()),
+        },
         "runs": [
             {"id": r.run_id, "mode": r.mode, "at": r.started_at,
              "new": r.findings_new, "total": r.findings_total, "notes": r.notes}

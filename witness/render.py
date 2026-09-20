@@ -13,7 +13,7 @@ from pathlib import Path
 
 from .axis import BAND_LABELS, verify
 from .ledger import Node, load_nodes, upcoming
-from .store import FindingStore, RunLog
+from .store import FindingStore, IntervalStore, RunLog
 
 REPORTS = Path(__file__).resolve().parent.parent / "reports"
 TITLE = "Behold what the whizz kids have wrought"
@@ -112,6 +112,41 @@ def render_witness(
                     "",
                 ]
 
+    intervals = IntervalStore().all()
+    if intervals:
+        shapes = Counter(f.shape for f in intervals)
+        lines += [
+            "## Along the edges",
+            "",
+            f"**{len(intervals)} intervals** witnessed — an edge claims that one position leads",
+            "to another across a span, and each end is judged on its own.",
+            "",
+            "| Shape | Meaning | Findings |",
+            "|---|---|---|",
+            f"| `both_ends` | a development that starts at one end and finishes at the other | {shapes.get('both_ends', 0)} |",
+            f"| `one_end` | only the opening or only the closing is anchored | {shapes.get('one_end', 0)} |",
+            f"| `span_only` | the duration matches, the endpoints do not align | {shapes.get('span_only', 0)} |",
+            f"| `neither` | two dated events with no thread between them | {shapes.get('neither', 0)} |",
+            "",
+        ]
+        for finding in sorted(intervals, key=lambda f: f.span_days):
+            lines += [
+                f"### {finding.edge} — {finding.opens} to {finding.closes} ({finding.span_days} days)",
+                "",
+                f"**{finding.development}** — `{finding.shape}`",
+                "",
+                finding.what_happened,
+                "",
+                f"- *Opens:* {finding.open_event or '— not anchored'}"
+                + (f" ({finding.open_date}, {finding.open_band})" if finding.open_date else "")
+                + (f" [{finding.open_url}]({finding.open_url})" if finding.open_url else ""),
+                f"- *Closes:* {finding.close_event or '— not anchored'}"
+                + (f" ({finding.close_date}, {finding.close_band})" if finding.close_date else "")
+                + (f" [{finding.close_url}]({finding.close_url})" if finding.close_url else ""),
+                f"- *Caution:* {finding.caution}",
+                "",
+            ]
+
     quiet_notes = [r for r in runs if r.notes]
     if quiet_notes:
         lines += ["## Where the days were quiet", "", "Runs that looked and found nothing worth recording:", ""]
@@ -133,6 +168,9 @@ def render_witness(
         "  while its developmental interpretation is weak.",
         "- The stated analog is a supplied developmental and symbolic framework. Historical",
         "  coincidence does not validate causation and does not predict superintelligence.",
+        "- An interval is not a dated correspondence. Its ends are judged separately, and the",
+        "  longer the span, the cheaper the coincidence: something always happened in the middle",
+        "  of a decade. Only the endpoints carry the claim.",
         "- Findings below the heading above were written by a language model with web search.",
         "  Each carries its own source and confidence. They are research notes, not a record.",
         "",

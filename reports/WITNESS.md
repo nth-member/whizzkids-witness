@@ -40,6 +40,9 @@ These are the workbook's own, and they hold for everything above.
   while its developmental interpretation is weak.
 - The stated analog is a supplied developmental and symbolic framework. Historical
   coincidence does not validate causation and does not predict superintelligence.
+- An interval is not a dated correspondence. Its ends are judged separately, and the
+  longer the span, the cheaper the coincidence: something always happened in the middle
+  of a decade. Only the endpoints carry the claim.
 - Findings below the heading above were written by a language model with web search.
   Each carries its own source and confidence. They are research notes, not a record.
 

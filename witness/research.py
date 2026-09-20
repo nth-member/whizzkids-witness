@@ -24,7 +24,16 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from .ledger import Node
-from .prompts import DISCIPLINE, EXTRACTION_INSTRUCTION, feed_task, research_task
+from .graph import Edge
+from .prompts import (
+    DISCIPLINE,
+    EXTRACTION_INSTRUCTION,
+    INTERVAL_DISCIPLINE,
+    INTERVAL_EXTRACTION,
+    feed_task,
+    interval_task,
+    research_task,
+)
 
 from .constants import MODEL, SEARCH_TOOL
 RAW_DIR = Path(__file__).resolve().parent.parent / "runs" / "raw"
@@ -52,6 +61,28 @@ class FindingSet(BaseModel):
     findings: list[RawFinding]
 
 
+class RawInterval(BaseModel):
+    """One development spanning an edge, as the extraction phase returns it."""
+
+    development: str = Field(description="The single development, named in a phrase")
+    shape: Literal["both_ends", "one_end", "span_only", "neither"]
+    what_happened: str = Field(description="What began, what concluded, in two or three sentences")
+    open_event: str = Field(default="", description="What happened at the opening date")
+    open_date: str = Field(default="", description="ISO date, or empty if this end is not anchored")
+    open_url: str = ""
+    close_event: str = Field(default="", description="What happened at the closing date")
+    close_date: str = Field(default="", description="ISO date, or empty if this end is not anchored")
+    close_url: str = ""
+    confidence: Literal["stated", "reported", "recalled — verify"]
+    caution: str = Field(description="What would make this weak — span length, thin thread, thin source")
+
+
+class IntervalSet(BaseModel):
+    summary: str
+    empty: bool = Field(description="True if the span holds nothing worth recording")
+    findings: list[RawInterval]
+
+
 @dataclass
 class ResearchResult:
     node_id: str
@@ -66,14 +97,20 @@ class DryRunClient:
 
     dry = True
 
-    def research(self, task: str, label: str) -> tuple[str, int]:
+    def research(self, task: str, label: str, system: str | None = None) -> tuple[str, int]:
         return (
             "[dry run] no search performed.\n\n--- task given to the model ---\n"
             + task,
             0,
         )
 
-    def extract(self, raw_text: str, label: str) -> FindingSet:
+    def extract(self, raw_text: str, label: str, schema=None, instruction=None, system=None):
+        if schema is IntervalSet:
+            return IntervalSet(
+                summary="[dry run] nothing extracted; no API call was made.",
+                empty=True,
+                findings=[],
+            )
         return FindingSet(
             summary="[dry run] nothing extracted; no API call was made.",
             quiet=True,
@@ -93,13 +130,14 @@ class WitnessClient:
         self.effort = effort
         self.search_tool = {**SEARCH_TOOL, "max_uses": max_uses}
 
-    def research(self, task: str, label: str) -> tuple[str, int]:
+    def research(self, task: str, label: str, system: str | None = None) -> tuple[str, int]:
         """Phase one: search the world.  Streamed -- search turns run long."""
         searched = 0
         with self.client.messages.stream(
             model=self.model,
             max_tokens=32000,
-            system=[{"type": "text", "text": DISCIPLINE, "cache_control": {"type": "ephemeral"}}],
+            system=[{"type": "text", "text": system or DISCIPLINE,
+                     "cache_control": {"type": "ephemeral"}}],
             thinking={"type": "adaptive"},
             output_config={"effort": self.effort},
             tools=[self.search_tool],
@@ -125,21 +163,25 @@ class WitnessClient:
                     searched += len(content)
         return "\n".join(chunks).strip(), searched
 
-    def extract(self, raw_text: str, label: str) -> FindingSet:
+    def extract(
+        self, raw_text: str, label: str, schema=None, instruction: str | None = None,
+        system: str | None = None,
+    ):
         """Phase two: structure the note.  No tools, no search, no invention."""
         response = self.client.messages.parse(
             model=self.model,
             max_tokens=16000,
-            system=DISCIPLINE,
+            system=system or DISCIPLINE,
             thinking={"type": "adaptive"},
             output_config={"effort": "medium"},
             messages=[
                 {
                     "role": "user",
-                    "content": f"{EXTRACTION_INSTRUCTION}\n\n--- research notes ---\n{raw_text}",
+                    "content": f"{instruction or EXTRACTION_INSTRUCTION}"
+                               f"\n\n--- research notes ---\n{raw_text}",
                 }
             ],
-            output_format=FindingSet,
+            output_format=schema or FindingSet,
         )
         if response.stop_reason == "refusal":
             raise RuntimeError(f"{label}: the model declined to structure these notes")
@@ -181,4 +223,23 @@ def research_feed(client, since: str, today: str, keep_raw: bool = True) -> Rese
         findings=findings,
         raw_path=raw_path,
         searched=searched,
+    )
+
+
+def research_interval(
+    client, edge: Edge, source_analog: str, target_analog: str, today: str,
+    keep_raw: bool = True,
+) -> ResearchResult:
+    """Search one edge: what began at its opening and concluded at its closing."""
+    task = interval_task(edge, source_analog, target_analog, today)
+    label = f"edge-{edge.source}-{edge.target}".replace(".", "_")
+    raw_text, searched = client.research(task, label, system=INTERVAL_DISCIPLINE)
+    raw_path = _write_raw(label, raw_text) if keep_raw and raw_text else None
+    findings = client.extract(
+        raw_text, label, schema=IntervalSet,
+        instruction=INTERVAL_EXTRACTION, system=INTERVAL_DISCIPLINE,
+    )
+    return ResearchResult(
+        node_id=label, raw_text=raw_text, findings=findings,
+        raw_path=raw_path, searched=searched,
     )

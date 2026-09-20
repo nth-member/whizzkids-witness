@@ -6,6 +6,7 @@
     python -m witness watch --dry-run        forward, without spending anything
     python -m witness backfill --limit 2     backward, into the silent nodes
     python -m witness feed --days 7          sideways, the world placed by date
+    python -m witness intervals              along the edges, end against end
     python -m witness render                 rewrite reports/WITNESS.md
     python -m witness build-web              rebuild the browser page
 
@@ -46,6 +47,12 @@ def _report(result) -> None:
     print(f"  nodes examined : {', '.join(result.examined) or 'none'}")
     print(f"  new findings   : {len(result.new_findings)}")
     for finding in result.new_findings:
+        if hasattr(finding, "shape"):
+            print(f"    [{finding.shape:<10}] {finding.edge}  {finding.span_days}d  "
+                  f"{finding.development}")
+            print(f"       opens {finding.open_date or '—'} ({finding.open_band or 'not anchored'})"
+                  f"   closes {finding.close_date or '—'} ({finding.close_band or 'not anchored'})")
+            continue
         offset = (
             "same day" if finding.offset_days == 0
             else f"{finding.offset_days:+d}d" if finding.offset_days is not None
@@ -110,6 +117,15 @@ def main(argv: list[str] | None = None) -> int:
 
     p_feed = sub.add_parser("feed", parents=[common], help="sideways: recent world, placed by date")
     p_feed.add_argument("--days", type=int, default=7)
+
+    p_int = sub.add_parser("intervals", parents=[common],
+                           help="along the edges: what began at one end and closed at the other")
+    p_int.add_argument("--limit", type=int, default=2)
+    p_int.add_argument("--backbone", action="store_true",
+                       help="test backbone links instead of long-range edges")
+    p_int.add_argument("--all-edges", action="store_true", help="both kinds")
+    p_int.add_argument("--from", dest="from_key", type=float, default=None,
+                       help="only edges leaving this key")
 
     sub.add_parser("render", parents=[common], help="rewrite reports/WITNESS.md")
 
@@ -237,6 +253,21 @@ def main(argv: list[str] | None = None) -> int:
     from . import modes
 
     client, model = _client(args)
+    if args.command == "intervals":
+        from .store import IntervalStore
+
+        result = modes.intervals(
+            client, model, now=now, limit=args.limit,
+            long_range=not args.backbone or args.all_edges,
+            backbone=args.backbone or args.all_edges,
+            from_key=args.from_key, workbook=args.workbook,
+            store=IntervalStore(), keep_raw=keep_raw,
+        )
+        _report(result)
+        if not args.dry_run:
+            print(f"\nwrote {write_witness(workbook=args.workbook, store=store, now=now)}")
+        return 0
+
     if args.command == "watch":
         result = modes.watch(client, model, now=now, horizon_days=args.horizon,
                              lookback_days=args.lookback, limit=args.limit,

@@ -14,9 +14,18 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 from .axis import band_for, offset_days
-from .ledger import Node, load_nodes, nodes_by_date, recently_passed, upcoming
-from .research import RawFinding, research_feed, research_node
-from .store import Finding, FindingStore, RunLog, RunRecord
+from .graph import Edge
+from .ledger import Node, load_graph, load_nodes, nodes_by_date, recently_passed, upcoming
+from .research import RawFinding, RawInterval, research_feed, research_interval, research_node
+from .sources import tier_for
+from .store import (
+    Finding,
+    FindingStore,
+    IntervalFinding,
+    IntervalStore,
+    RunLog,
+    RunRecord,
+)
 
 
 @dataclass
@@ -72,6 +81,9 @@ def _to_finding(
         source_name=raw.source_name,
         confidence=raw.confidence,
         caution=raw.caution,
+        # Judged in code from the URL, never from the model's account of where
+        # it looked.
+        source_tier=tier_for(raw.source_url),
         analog_at_node=node.analog_text,
         chapter=node.chapter_title,
         run_id=run_id,
@@ -270,3 +282,137 @@ def feed(
         )
     )
     return ModeResult("feed", run_id, sorted({f.node_id for f in collected}), new_findings, [], notes)
+
+
+def _to_interval(
+    raw: RawInterval, edge: Edge, run_id: str, model: str
+) -> IntervalFinding:
+    """Place one development against one edge, judging each end separately."""
+    open_date = _parse_event_date(raw.open_date)
+    close_date = _parse_event_date(raw.close_date)
+
+    open_offset = offset_days(edge.source_date, open_date) if open_date else None
+    close_offset = offset_days(edge.target_date, close_date) if close_date else None
+
+    return IntervalFinding(
+        edge_source=edge.source,
+        edge_target=edge.target,
+        opens=edge.source_date.date().isoformat(),
+        closes=edge.target_date.date().isoformat(),
+        span_days=int(abs(edge.implied_days)),
+        stated_gap=edge.stated_gap,
+        gap_agrees=edge.gap_agrees,
+        edge_stated=edge.stated,
+        edge_default=edge.default,
+        development=raw.development,
+        shape=raw.shape,
+        what_happened=raw.what_happened,
+        open_event=raw.open_event,
+        open_date=raw.open_date,
+        open_offset_days=open_offset,
+        open_band=band_for(open_offset) if open_offset is not None else "",
+        open_url=raw.open_url,
+        open_source_tier=tier_for(raw.open_url) if raw.open_url else "",
+        close_event=raw.close_event,
+        close_date=raw.close_date,
+        close_offset_days=close_offset,
+        close_band=band_for(close_offset) if close_offset is not None else "",
+        close_url=raw.close_url,
+        close_source_tier=tier_for(raw.close_url) if raw.close_url else "",
+        confidence=raw.confidence,
+        caution=raw.caution,
+        run_id=run_id,
+        model=model,
+    )
+
+
+def intervals(
+    client,
+    model: str,
+    now: datetime | None = None,
+    limit: int = 2,
+    long_range: bool = True,
+    backbone: bool = False,
+    from_key: float | None = None,
+    workbook=None,
+    store: IntervalStore | None = None,
+    keep_raw: bool = True,
+) -> ModeResult:
+    """Along the edges: what began at one end and concluded at the other.
+
+    By default this takes the long-range edges -- the ledger's own non-obvious
+    claims, where it skips over intervening positions to assert a relation.  The
+    backbone links only join consecutive positions, so they assert much less.
+
+    Only edges that have already closed are researched: an interval whose
+    closing date is in the future cannot be witnessed yet.
+    """
+    now = now or datetime.now(timezone.utc)
+    graph = load_graph(workbook) if workbook else load_graph()
+    store = store or IntervalStore()
+    run_id = RunRecord.new_id("intervals")
+    today = now.date().isoformat()
+    done = store.witnessed_edges()
+
+    def wanted(edge: Edge) -> bool:
+        if edge.target_date.date() > now.date():
+            return False                      # the span has not closed yet
+        if (edge.source, edge.target) in done:
+            return False
+        if from_key is not None:
+            return abs(edge.source - from_key) < 1e-9
+        if backbone and long_range:
+            return True
+        if backbone:
+            return edge.default
+        return not edge.default
+
+    # Shortest spans first: a coincidence over a few weeks costs more to find
+    # than one over a decade, so those are the claims worth testing.
+    candidates = sorted(
+        (e for e in graph.edges if wanted(e)), key=lambda e: abs(e.implied_days)
+    )
+    targets = candidates[:limit]
+
+    collected: list[IntervalFinding] = []
+    examined: list[str] = []
+    empty: list[str] = []
+    notes: list[str] = []
+
+    for edge in targets:
+        source_record = graph.records.get(edge.source)
+        target_record = graph.records.get(edge.target)
+        result = research_interval(
+            client,
+            edge,
+            source_record.analog if source_record else "(unknown)",
+            target_record.analog if target_record else "(unknown)",
+            today,
+            keep_raw=keep_raw,
+        )
+        examined.append(f"{edge.source}→{edge.target}")
+        if result.findings.empty or not result.findings.findings:
+            empty.append(f"{edge.source}→{edge.target}")
+            notes.append(
+                f"{edge.source}→{edge.target} ({edge.source_date.date()}–"
+                f"{edge.target_date.date()}): {result.findings.summary}"
+            )
+            continue
+        for raw in result.findings.findings:
+            collected.append(_to_interval(raw, edge, run_id, model))
+
+    new_findings = store.append(collected)
+    notes.insert(
+        0,
+        f"{len(candidates)} edges are closed and unwitnessed"
+        f" ({'backbone' if backbone and not long_range else 'long-range' if not backbone else 'all'})",
+    )
+    if not getattr(client, "dry", False):
+        RunLog().append(
+            RunRecord(
+                run_id=run_id, mode="intervals", started_at=now.isoformat(), model=model,
+                nodes_examined=examined, findings_new=len(new_findings),
+                findings_total=len(store.all()), notes="; ".join(notes[:8]),
+            )
+        )
+    return ModeResult("intervals", run_id, examined, new_findings, empty, notes)

@@ -8,9 +8,11 @@ a correspondence was asked for.  An empty answer is a real answer.
 
 from __future__ import annotations
 
+from .graph import Edge
 from .ledger import Node
+from .sources import preferred_block
 
-DISCIPLINE = """\
+_DISCIPLINE_TEMPLATE = """\
 You are the witness to a dated ledger called SFO-BB.
 
 The ledger places 265 positions on one time axis (timestamp = 2015-04-30T11:28:41.739Z
@@ -59,10 +61,62 @@ RULES OF EVIDENCE
    predicted", no reading the analog forward into the event. The analog is given
    to you as context for what the ledger claims, not as a lens to see through.
 
+{where_to_look}
 CONFIDENCE VALUES
   stated            : the source states this date for this event directly.
   reported          : a credible secondary source reports it.
   recalled — verify : you believe it, the sourcing is thin, a human should check.
+"""
+
+
+def discipline() -> str:
+    """The standing rules, with the ledger's own sources named inside them."""
+    return _DISCIPLINE_TEMPLATE.format(where_to_look=preferred_block())
+
+
+# Built once at import: the text is identical on every call, which is what lets
+# it be cached as a system block.
+DISCIPLINE = discipline()
+
+
+INTERVAL_DISCIPLINE = DISCIPLINE + """\
+
+WITNESSING AN INTERVAL RATHER THAN A DATE
+
+An edge of this ledger is not a date, it is a claim about a span: that one
+position leads to another, across a stated gap. Testing that is a different
+task from testing a date, and the same-day / seven-day / thirty-day bands do
+not apply to it. These rules do.
+
+1. The endpoints carry the claim, not the middle. You are looking for a single
+   nameable development that BEGAN at or near the opening date and CONCLUDED at
+   or near the closing date. Something that merely happened somewhere inside
+   the span is not evidence for the span. Over a gap of years, something always
+   happened in the middle; that is arithmetic, not correspondence.
+
+2. Each end is judged on its own, by the same distances used elsewhere: the day
+   itself, within seven days, or eight to thirty days. Report the date you
+   found at each end and let the offsets be computed. Do not average the two
+   ends into a single verdict.
+
+3. Say plainly which ends you actually anchored:
+     both ends  — a development that starts at one end and finishes at the other
+     one end    — only the opening or only the closing is anchored
+     span only  — something whose duration matches, whose endpoints do not align
+     neither    — nothing of the kind
+
+4. The longer the gap, the cheaper the coincidence. A span of a few weeks that
+   is anchored at both ends is worth more than a span of a decade that is. When
+   the gap is long, say so in the caution and say what would have made the
+   finding stronger.
+
+5. One development, not two. If the opening and closing events have nothing to
+   do with each other, you have two dated events, not an interval — report them
+   as such and mark the shape "neither". Do not manufacture a thread between
+   them.
+
+6. As everywhere else: nothing found is a valid result, and the stated gap is
+   context, not a target. Some of these gaps are disputed in the ledger itself.
 """
 
 
@@ -162,4 +216,55 @@ For each finding, the caution field must say what would make this correspondence
 weak -- a local-versus-UTC date, a publication date standing in for an event
 date, a thin source, or a date that matches while the meaning does not. If you
 can think of no weakness, write "none noted", but think first.
+"""
+
+
+def interval_task(edge: Edge, source_analog: str, target_analog: str, today: str) -> str:
+    """The instruction for researching one edge."""
+    days = abs(edge.implied_days)
+    years = days / 365.25
+    length = f"{days:,.0f} days" + (f" — about {years:,.1f} years" if days > 400 else "")
+    return f"""\
+Today is {today}.
+
+EDGE {edge.source} → {edge.target}
+  Opens : {edge.source_date.date()}  at position {edge.source}
+          stated analog: {source_analog}
+  Closes: {edge.target_date.date()}  at position {edge.target}
+          stated analog: {target_analog}
+  Span  : {length}
+  Gap   : stated {edge.stated_gap}{"" if edge.gap_agrees else f", though the positions imply {edge.implied_gap} — the ledger's own figure is disputed here"}
+  Kind  : {"the backbone — these two positions are consecutive" if edge.default else "a long-range edge — the ledger skips over intervening positions to assert this one"}
+  {"This link is not written down in the workbook; it holds because each position connects to the one immediately next to it." if not edge.stated else ""}
+
+Search for a single development in computing, artificial intelligence, networks
+or the machine industry that BEGAN on or near {edge.source_date.date()} and
+CONCLUDED on or near {edge.target_date.date()}.
+
+Work each end separately and source each end separately. A standard that was
+proposed at one end and ratified at the other; a company founded at one end and
+shipping at the other; a paper published at one end and its result deployed at
+the other; a system announced at one end and withdrawn at the other.
+
+If you can anchor only one end, say so and report that end. If you find nothing
+of the kind, say the span holds nothing — that is a real answer, and over a gap
+this long it is the more likely one.
+"""
+
+
+INTERVAL_EXTRACTION = """\
+Convert the research notes below into structured interval findings.
+
+Carry over only what the notes establish. For each finding give the opening
+event with its own date and source, the closing event with its own date and
+source, and the shape you actually anchored — both ends, one end, span only, or
+neither. Where an end was not anchored, leave its fields empty rather than
+filling them with something approximate.
+
+The caution must say what would make this weak: a long span where coincidence
+is cheap, a development whose two ends are only loosely the same thing, a
+publication date standing in for an event date, or a thin source.
+
+If the notes conclude the span holds nothing, return an empty list and put the
+reason in the summary.
 """
