@@ -55,6 +55,14 @@ def build_payload(workbook=None, store: FindingStore | None = None, now: datetim
             "max_in": list(report.max_in),
             "backbone": report.backbone,
             "long_range": report.long_range,
+            "stated_edges": report.stated_edges,
+            "derived_edges": report.derived_edges,
+            "derived": [
+                {"from": e.source, "to": e.target, "gap": e.stated_gap,
+                 "from_date": e.source_date.date().isoformat(),
+                 "to_date": e.target_date.date().isoformat()}
+                for e in graph.derived_edges
+            ],
             "backward": [
                 {"from": e.source, "to": e.target, "gap": e.stated_gap,
                  "implied": e.implied_gap, "days": e.implied_days}
@@ -91,8 +99,18 @@ def build_payload(workbook=None, store: FindingStore | None = None, now: datetim
                 "key": n.analog_key,
                 "succ": [
                     {"key": k, "gap": g, "date": d,
-                     "disputed": abs((k - (n.analog_key or k)) - g) > 0.005}
+                     "disputed": abs((k - (n.analog_key or k)) - g) > 0.005,
+                     "implied": False}
                     for k, g, d in n.successor_dates[:8]
+                ] + [
+                    # Edges this node's key gains from the default predecessor rule.
+                    {"key": e.target, "gap": e.stated_gap,
+                     "date": e.target_date.date().isoformat(),
+                     "disputed": False, "implied": True}
+                    for e in (
+                        graph.out.get(n.analog_key, []) if n.analog_key is not None else []
+                    )
+                    if not e.stated
                 ],
                 "items": [
                     {"date": i.date, "off": i.offset, "kind": i.kind,

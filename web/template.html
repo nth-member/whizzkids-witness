@@ -144,6 +144,8 @@ input[type="search"]:focus-visible,button:focus-visible{outline:2px solid var(--
 .edge[data-dead="1"]:hover{border-color:var(--rule);color:var(--ink-2)}
 .edge .k{color:var(--ink);font-weight:500}
 .edge .disputed{color:var(--near)}
+.edge .implied{color:var(--context)}
+.edge[data-implied="1"]{border-style:dashed}
 .graphbar{margin-top:18px;border:1px solid var(--rule);border-radius:4px;background:var(--surface);
   padding:13px 14px;font-size:13px;color:var(--ink-2)}
 .graphbar b{font-family:var(--mono);font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
@@ -264,7 +266,9 @@ footer li{margin-bottom:7px;max-width:74ch}
   if (G) {
     var gb = document.getElementById('graphbar');
     var html = 'The positions are also a directed graph: <b>' + G.edges +
-      '</b> successor edges over <b>' + G.keys + '</b> keys — <b>' + G.backbone +
+      '</b> successor edges over <b>' + G.keys + '</b> keys (<b>' + G.stated_edges +
+      '</b> stated, <b>' + G.derived_edges + '</b> implied by the default predecessor rule, ' +
+      'which joins each key to the one standing temporally just before it) — <b>' + G.backbone +
       '</b> joining each key to the next in position order, <b>' + G.long_range +
       '</b> skipping over that spine — ' +
       (G.acyclic ? 'acyclic' : 'containing a cycle') +
@@ -345,10 +349,12 @@ footer li{margin-bottom:7px;max-width:74ch}
       n.succ.forEach(function(e){
         var target = keyNodes[String(e.key)];
         h += '<button class="edge" data-key="' + esc(e.key) + '"' +
+             (e.implied ? ' data-implied="1"' : '') +
              (target ? ' data-goto="' + esc(target) + '"' : ' data-dead="1"') + '>' +
              '<span class="k">' + esc(e.key) + '</span> · ' + esc(e.date) +
              ' · gap ' + esc(e.gap) +
              (e.disputed ? ' <span class="disputed">(gap disputed)</span>' : '') +
+             (e.implied ? ' <span class="implied">(implied)</span>' : '') +
              (target ? ' · ' + esc(target) : ' · no node here') +
              '</button>';
       });

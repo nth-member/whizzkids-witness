@@ -45,13 +45,35 @@ expected result.
 ## The edge set
 
 The positions are not only a sequence. Each of the **400** BB keys names its successors with a
-stated gap, and those **701** edges make a directed graph: two roots — **−147.6** (the Altair
-position, 1974-12-01) and **−0.18** — one sink, **212.4**, and no cycles. The widest branching is
+stated gap. With the default predecessor rule below, that makes **704** edges in a directed graph:
+one root, **−147.6** (the Altair position, 1974-12-01), one sink, **212.4**, and no cycles. The widest branching is
 at **0.00** — the epoch itself, 2015-04-30 — which fans out to eighteen successors. The most
 converged-on key is **24.41**, with seven predecessors.
 
-The edge set splits into a **backbone** of **396** edges joining each key to the next in position
+The edge set splits into a **backbone** of **399** edges joining each key to the next in position
 order, and **305 long-range edges** skipping over that spine. `witness edges` reports the split.
+
+### The default predecessor rule
+
+A key's immediate predecessor is, by default, the key standing temporally just before it. So
+consecutive positions are joined whether or not the workbook spells the edge out, and the backbone
+is complete by construction.
+
+Three edges come from the rule rather than from the file, and all three sit in the epoch knot the
+merged row damaged:
+
+| Implied edge | Gap | Span |
+|---|---|---|
+| `−1.916 → −0.18` | 1.736 | 2014-10-20 → 2015-04-12 |
+| `0.0 → 0.18` | 0.18 | 2015-04-30 → 2015-05-18 |
+| `0.18 → 0.33` | 0.15 | 2015-05-18 → 2015-06-02 |
+
+The first of those gives −0.18 its predecessor, so the graph has one root again rather than two.
+
+Derived edges are never counted as something the ledger said: they carry `stated = False`, print
+as *implied by the default predecessor rule*, and show dashed and marked *(implied)* in the page.
+`witness edges --stated-only` drops them and reports the graph exactly as the workbook states it —
+701 edges, a 396-edge backbone, two roots.
 
     python -m witness edges                      the graph and its anomalies
     python -m witness edges --from 0.0 --depth 1 walk forward from a key
@@ -88,7 +110,8 @@ Pits move ventrally, Auricular Hillocks, Foot Plate* continues on 0.33, 0.8 and 
 
 The graph's only backward edge and its only ordering violation both came from the collapse, and
 both disappear. One consequence is recorded rather than hidden: the inbound edge belongs to 0.18,
-so −0.18 has no predecessor, and the graph now has two roots.
+so the source states no edge into −0.18. The default predecessor rule supplies one,
+`−1.916 → −0.18`, and the graph keeps its single root; `--stated-only` shows the two-root form.
 
 The edges reach the agent as context, never as a target: a node's brief names what the ledger says
 comes next, explicitly marked as not a prediction to confirm and not something to search for. The

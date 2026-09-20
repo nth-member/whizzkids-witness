@@ -54,11 +54,19 @@ def parse_pairs(cell) -> list[tuple[float, float]]:
 
 @dataclass(frozen=True)
 class Edge:
-    """One successor relation, with both readings of its gap."""
+    """One successor relation, with both readings of its gap.
+
+    ``stated`` is False for an edge the workbook does not list but the default
+    predecessor rule implies: every key's default predecessor is the key
+    standing temporally just before it, so consecutive positions are joined
+    whether or not the source spells the edge out.  Derived edges are marked
+    everywhere they appear and are never counted as something the ledger said.
+    """
 
     source: float
     target: float
     stated_gap: float
+    stated: bool = True
 
     @property
     def implied_gap(self) -> float:
@@ -93,6 +101,13 @@ class Edge:
 
     def describe(self) -> str:
         arrow = f"{self.source} → {self.target}"
+        if not self.stated:
+            return (
+                f"{arrow}  gap {self.stated_gap}  "
+                f"{self.implied_days:,.0f} days "
+                f"({self.source_date.date()} → {self.target_date.date()})  "
+                f"[implied by the default predecessor rule]"
+            )
         span = (
             f"{self.implied_days:,.0f} days "
             f"({self.source_date.date()} → {self.target_date.date()})"
@@ -132,6 +147,8 @@ class IntegrityReport:
     max_in: tuple[float, int]
     backbone: int
     long_range: int
+    stated_edges: int
+    derived_edges: int
 
     @property
     def acyclic(self) -> bool:
@@ -144,19 +161,49 @@ class IntegrityReport:
 
 
 class Graph:
-    """The successor relation over BB keys."""
+    """The successor relation over BB keys.
 
-    def __init__(self, records: Iterable[KeyRecord]):
+    With ``imply_backbone`` (the default), the graph also carries the edges the
+    default predecessor rule implies: where two consecutive positions have no
+    stated edge between them, one is derived, marked ``stated=False``, and its
+    gap is the difference between the two keys.
+    """
+
+    def __init__(self, records: Iterable[KeyRecord], imply_backbone: bool = True):
         self.records: dict[float, KeyRecord] = {r.key: r for r in records}
         self.edges: list[Edge] = []
         self.out: dict[float, list[Edge]] = defaultdict(list)
         self.into: dict[float, list[Edge]] = defaultdict(list)
         for record in self.records.values():
             for target, gap in record.successors:
-                edge = Edge(record.key, target, gap)
-                self.edges.append(edge)
-                self.out[record.key].append(edge)
-                self.into[target].append(edge)
+                self._add(Edge(record.key, target, gap))
+        if imply_backbone:
+            self._imply_backbone()
+
+    def _add(self, edge: Edge) -> None:
+        self.edges.append(edge)
+        self.out[edge.source].append(edge)
+        self.into[edge.target].append(edge)
+
+    def _imply_backbone(self) -> list[Edge]:
+        """Join each key to the one standing temporally just before it."""
+        order = sorted(self.records)
+        derived: list[Edge] = []
+        for earlier, later in zip(order, order[1:]):
+            if any(abs(e.target - later) < 1e-9 for e in self.out.get(earlier, [])):
+                continue
+            edge = Edge(earlier, later, round(later - earlier, 6), stated=False)
+            self._add(edge)
+            derived.append(edge)
+        return derived
+
+    @property
+    def stated_edges(self) -> list[Edge]:
+        return [e for e in self.edges if e.stated]
+
+    @property
+    def derived_edges(self) -> list[Edge]:
+        return [e for e in self.edges if not e.stated]
 
     def __len__(self) -> int:
         return len(self.records)
@@ -278,4 +325,6 @@ class Graph:
             max_in=max(in_deg.items(), key=lambda kv: kv[1]) if in_deg else (0.0, 0),
             backbone=len(backbone),
             long_range=len(long_range),
+            stated_edges=len(self.stated_edges),
+            derived_edges=len(self.derived_edges),
         )

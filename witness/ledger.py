@@ -392,9 +392,15 @@ def load_keys(workbook_path: Path | str = DEFAULT_WORKBOOK) -> list[KeyRecord]:
         wb.close()
 
 
-def load_graph(workbook_path: Path | str = DEFAULT_WORKBOOK) -> Graph:
-    """The successor relation over the keys, with declared errata applied."""
-    return Graph(load_keys(workbook_path))
+def load_graph(
+    workbook_path: Path | str = DEFAULT_WORKBOOK, imply_backbone: bool = True
+) -> Graph:
+    """The successor relation over the keys, with declared errata applied.
+
+    ``imply_backbone=False`` gives the graph exactly as the workbook states it,
+    without the edges the default predecessor rule implies.
+    """
+    return Graph(load_keys(workbook_path), imply_backbone=imply_backbone)
 
 
 def applied_errata() -> list[Erratum]:

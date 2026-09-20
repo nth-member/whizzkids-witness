@@ -92,6 +92,9 @@ def main(argv: list[str] | None = None) -> int:
     p_edges.add_argument("--depth", type=int, default=2, help="how far to walk")
     p_edges.add_argument("--chain", action="store_true",
                          help="follow one path to the sink, nearest successor each step")
+    p_edges.add_argument("--stated-only", action="store_true",
+                         help="the graph exactly as the workbook states it, without the"
+                              " edges the default predecessor rule implies")
 
     p_watch = sub.add_parser("watch", parents=[common], help="forward: dates arriving or just passed")
     p_watch.add_argument("--horizon", type=int, default=120)
@@ -149,7 +152,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if check.ok else 1
 
     if args.command == "edges":
-        graph = load_graph(args.workbook) if args.workbook else load_graph()
+        imply = not args.stated_only
+        graph = load_graph(args.workbook, imply) if args.workbook else load_graph(
+            imply_backbone=imply
+        )
         if args.from_key is not None:
             record = graph.records.get(args.from_key)
             if record is None:
@@ -182,6 +188,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"edges            : {report.edges} — {report.backbone} joining each key to the")
         print( "                   next in position order, and")
         print(f"                   {report.long_range} long-range edges skipping over that spine")
+        if report.derived_edges:
+            print(f"  stated           : {report.stated_edges}")
+            print(f"  implied          : {report.derived_edges} — by the default predecessor rule,")
+            print( "                     which joins each key to the one standing temporally")
+            print( "                     just before it. Listed below, and marked wherever")
+            print( "                     they appear. Use --stated-only to leave them out.")
+            for edge in graph.derived_edges:
+                print(f"    {edge.describe()}")
         print(f"acyclic          : {report.acyclic}")
         print(f"every successor is a key: {report.closed}")
         print(f"roots            : {report.roots}")
