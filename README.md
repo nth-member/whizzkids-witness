@@ -70,6 +70,9 @@ nothing is a successful run.
 
 ## The browser page
 
+Published, and openable on a phone: **https://claude.ai/artifact/LcaxFfw5pepitte1YW4gfs**
+(private to the account that published it until shared).
+
 `web/index.html` is one self-contained file with the ledger and the findings baked in. It opens
 in Firefox or Chrome on Android, Safari or Chrome on iOS, or any desktop browser — from the
 filesystem, off a USB stick, or any static host. No server, no network, no build step.
