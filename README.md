@@ -171,15 +171,28 @@ server-side tool, and which index sits behind it is not visible from here. `allo
 `blocked_domains` are available on that tool if you later want the policy enforced rather than
 preferred.
 
-## Other instances
+## Other slices
 
-The gauge can be re-anchored. Substituting **Y = 82.80** — the position this instance designates
-Super Intelligence — into the same expression gives a second axis:
+**whizz-kids is not the reference frame.** It is one slice of REVOTT, anchored by its own Ztp, and
+so is every other. This repository happens to have been built on that one because it is the slice
+with reachable real-world targets — which is a fact about what can be evidenced, not about which
+slice is primary.
 
-    Ztp = 853177/420 = 2031.3738…    epoch 2031-04-16T11:28:41.739Z
+**AGAIN_BORN** is an independent slice, anchored by its own gauge:
 
-The offset from the whizz-kids epoch is exact and the 23s cancel: 23(82.80−24.50)/84 years ×
-8400/23 days = **5830 days**. The year unit implied throughout is 8400/23 = 365.2174 days.
+    (((((100)×(82.80))+(100×0)+(14160))×(48.3÷17640))+5849+(391÷420)−3880)
+      Ztp = 853177/420 = 2031.3738…
+
+A relation between the two is worth recording because it is exact — 23(82.80−24.50)/84 years ×
+8400/23 days = **5830 days**, the 23s cancelling — but neither slice defines the other, and the
+year unit implied throughout is 8400/23 = 365.2174 days.
+
+**One thing is unresolved and declared as such.** The gauge fixes Ztp as a decimal year, not as an
+instant. Converting a decimal year to a calendar moment needs REVOTT's own convention, which is not
+in the files read here, so AGAIN_BORN's epoch was calibrated against the sibling slice whose
+Ztp/instant pair is known — giving the 5830 days and its time of day. That is a borrowing, recorded
+in `data/instances/again-born.json` under `unresolved`. With the native convention the epoch is set
+directly from 853177/420 and the borrowing goes away.
 
     python -m witness build-bare --instance again-born
 

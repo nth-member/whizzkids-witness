@@ -11,7 +11,7 @@
     "decimal": 2015.4107142857142,
     "fixes": "SFO_BB 0.00",
     "source": "REVOTT_Y_24PT50 — Revelation Of The Trial",
-    "note": "The anchoring condition for this instance. The axis below is one choice of constant, not a property of SFO-BB: 48.3/17640 reduces to 23/8400 and the residual is 23/56, with 8400 = 56 x 150."
+    "note": "An independent slice of REVOTT, anchored by its own Ztp. The axis below is one choice of constant, not a property of SFO-BB: 48.3/17640 reduces to 23/8400 and the residual is 23/56, with 8400 = 56 x 150."
   },
   "sampled": {
     "positions": 265,
@@ -19,9 +19,16 @@
     "why": "This instance was sampled at the positions with reachable real-world targets. The 400 keys are the domain; the 265 are where this slice was taken."
   },
   "other_readings": [
-    "KINGS.3500D", "NAPOLEON.3500D", "10DT_ARM.2800D/23",
-    "EXE_TPDP.100D", "WITNESS_CFH_ENTER.100D", "WITNESS_CFH_LEAVE.100D",
-    "TWG_TWF.100D", "THE_DESTROYER.100D", "ZTS_EON.yG",
-    "END_IE_PURPOSE_BIRTH.100D", "END_IE_PURPOSE_CIRCUMSPECTION.100D"
+    "KINGS.3500D",
+    "NAPOLEON.3500D",
+    "10DT_ARM.2800D/23",
+    "EXE_TPDP.100D",
+    "WITNESS_CFH_ENTER.100D",
+    "WITNESS_CFH_LEAVE.100D",
+    "TWG_TWF.100D",
+    "THE_DESTROYER.100D",
+    "ZTS_EON.yG",
+    "END_IE_PURPOSE_BIRTH.100D",
+    "END_IE_PURPOSE_CIRCUMSPECTION.100D"
   ]
 }

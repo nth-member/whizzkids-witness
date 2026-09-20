@@ -10,12 +10,23 @@
     "value": "853177/420",
     "decimal": 2031.3738095238095,
     "fixes": "Ztp",
-    "source": "the whizz-kids gauge with Y = 82.80 in place of 24.50",
-    "note": "Y = 82.80 is the position the whizz-kids instance designates Super Intelligence. The offset from that instance is exact: 23(82.80-24.50)/84 years x 8400/23 days = 5830 days, the 23s cancelling, so this epoch is the whizz-kids epoch plus 5830 days. The year unit implied throughout is 8400/23 = 365.2174 days."
+    "source": "REVOTT",
+    "note": "An independent slice of REVOTT, anchored by its own Ztp. It is not derived from any other instance and stands on its own gauge."
   },
   "sampled": {
     "positions": 400,
     "of_keys": 400,
-    "why": "Instantiated across the whole key domain, not a sampled slice. No real-world targets are attached and none are claimed."
+    "why": "Instantiated across the whole key domain. No real-world targets are attached and none are claimed."
+  },
+  "relations": {
+    "note": "Observed relations to sibling slices, recorded because they are exact, not because either slice defines the other.",
+    "whizz-kids": {
+      "separation_days": 5830,
+      "derivation": "23(82.80 − 24.50)/84 years × 8400/23 days = 5830, the 23s cancelling",
+      "year_unit_days": "8400/23 = 365.2174"
+    }
+  },
+  "unresolved": {
+    "year_to_instant": "The gauge fixes Ztp as a decimal year, 2031.3738…, not as an instant. Converting a decimal year to a calendar moment needs REVOTT's own convention, which is not in the files read here. The epoch above was therefore calibrated against the sibling slice, whose Ztp/instant pair is known, giving a separation of exactly 5830 days and carrying its time of day, 11:28:41.739Z. Supply the native convention and this epoch is set directly from 853177/420 with no reference to any other slice."
   }
 }
