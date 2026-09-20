@@ -1,0 +1,49 @@
+{
+  "note": "Corrections applied to the vendored workbook at load time. The .xlsx itself is never modified: it stays the source of record, and every correction is declared here with its evidence, so a reader can see what was changed and undo it. Set \"applied\": false to drop one.",
+  "errata": [
+    {
+      "id": "E-001-split-0.18",
+      "applied": true,
+      "reported_by": "corpus author",
+      "reported_on": "2026-09-20",
+      "target": "BB analog index — source row 230, which carries two keys' worth of data under one label",
+      "change": {
+        "type": "key_split",
+        "row_key": 0.18,
+        "into": [
+          {
+            "key": -0.18,
+            "analog": "...Lens Vesicle, Nasal Pit, Hand Plate...",
+            "successors": [
+              [
+                0.0,
+                0.18
+              ]
+            ]
+          },
+          {
+            "key": 0.18,
+            "analog": "...Nasal Pits move ventrally, Auricular Hillocks, Foot Plate...",
+            "successors": [
+              [
+                1.62,
+                1.44
+              ]
+            ]
+          }
+        ]
+      },
+      "reason": "Both -0.18 and 0.18 exist, in their appropriate positions: -0.18 on 2015-04-12, eighteen days before the epoch at 0.00, and 0.18 on 2015-05-18, eighteen days after it. The merged workbook collapsed them into a single row labelled 0.18, which then carried both keys' successor edges and sat in -0.18's place in the ordering.",
+      "evidence_for": [
+        "Every gap reconciles once the edges are separated: -0.18 -> 0.0 states 0.18 and implies 0.18; 0.18 -> 1.62 states 1.44 and implies 1.44; the inbound -1.916 -> 0.18 states 2.096 and implies 2.096. Under the merged row, the first of those disagreed and ran backward.",
+        "The row sat between -1.916 and 0.0 — exactly where -0.18 belongs — and was the only ordering violation in the 399-row file. Split, the ordering is perfect.",
+        "The two strands divide along the same line as the edges. 'Lens Vesicle, Nasal Pit, Hand Plate' appears only on this row and on 0.00, so it ends at 0.00 — the edge -0.18 -> 0.0. 'Nasal Pits move ventrally, Auricular Hillocks, Foot Plate' continues on 0.33, 0.8 and 1.62 — the edge 0.18 -> 1.62.",
+        "The merged row's attribute cell holds exactly these two strands, one per key."
+      ],
+      "evidence_against": [],
+      "cost": "Keys go from 399 to 400 and the edge count is unchanged at 701. The graph's only backward edge and its only ordering violation both disappear, and disputed gaps fall from 5 to 4. One consequence is structural and is not hidden: the inbound edge -1.916 -> 0.18 belongs to 0.18, so -0.18 has no predecessor and the graph now has two roots, -147.6 and -0.18. That reads consistently with the strands -- 'Lens Vesicle, Nasal Pit, Hand Plate' begins at -0.18 and ends at 0.00 -- but it is a claim the source does not make, and it is recorded here as a consequence of the split rather than as a finding.",
+      "inherited": "Both keys inherit the merged row's design-story chapter and ledger evidence status; the workbook records those per position, and the split does not divide them.",
+      "preserves": "No node's analog key or successor cell changes: no node was attached to this key, and the inbound edge -1.916 -> 0.18 belongs to 0.18 and stays as recorded."
+    }
+  ]
+}

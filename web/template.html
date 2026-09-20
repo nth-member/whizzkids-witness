@@ -150,6 +150,9 @@ input[type="search"]:focus-visible,button:focus-visible{outline:2px solid var(--
 .graphbar .flag{display:block;margin-top:8px;padding-top:8px;border-top:1px solid var(--rule-2);
   font-size:12.5px;color:var(--ink-3)}
 .graphbar .flag code{font-family:var(--mono);font-size:11.5px;color:var(--near)}
+.graphbar .errata{display:block;margin-top:8px;padding-top:8px;border-top:1px solid var(--rule-2);
+  font-size:12.5px;color:var(--ink-2)}
+.graphbar .errata b.tag{font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:500}
 .node.flash{background:var(--accent-soft)}
 
 /* ---- footer ---- */
@@ -281,6 +284,16 @@ footer li{margin-bottom:7px;max-width:74ch}
         G.disputed.map(function(d){
           return '<code>' + d.from + '→' + d.to + ' stated ' + d.gap +
                  ', implied ' + d.implied + '</code>';
+        }).join(' ') + '</span>';
+    }
+    var errata = DATA.errata || [];
+    if (errata.length) {
+      html += '<span class="errata"><b class="tag">' + errata.length +
+        ' erratum' + (errata.length > 1 ? 's' : '') + ' applied</b> — the workbook file is not ' +
+        'modified; corrections are declared in <code>data/errata.json</code> and applied when it ' +
+        'is read. ' +
+        errata.map(function(e){
+          return '<b>' + esc(e.summary) + '</b>: ' + esc(e.reason);
         }).join(' ') + '</span>';
     }
     gb.innerHTML = html;

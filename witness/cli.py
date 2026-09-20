@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .axis import verify
-from .ledger import load_graph, load_nodes, upcoming
+from .ledger import applied_errata, load_graph, load_nodes, upcoming
 from .render import render_upcoming_table, write_witness
 from .constants import MODEL
 from .store import FindingStore
@@ -139,6 +139,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"successor graph  : {report.edges} edges over {report.keys} keys, "
               f"{'acyclic' if report.acyclic else 'CYCLIC'}, "
               f"{len(report.gap_disputed)} gaps disputed  (see: witness edges)")
+        corrections = applied_errata()
+        if corrections:
+            print(f"errata applied   : {len(corrections)} — "
+                  + "; ".join(f"{e.id} ({e.summary})" for e in corrections))
         ahead = upcoming(nodes, now, 400)
         if ahead:
             print(f"next date        : {ahead[0].node_id} on {ahead[0].iso_date} — {ahead[0].analog_text}")
@@ -165,6 +169,15 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         report = graph.integrity()
+        corrections = applied_errata()
+        if corrections:
+            print("errata applied to the workbook before this report:")
+            for erratum in corrections:
+                print(f"  {erratum.id}: {erratum.summary}")
+                print(f"    {erratum.reason}")
+                print(f"    reported by {erratum.reported_by}, {erratum.reported_on};"
+                      f" declared in data/errata.json")
+            print()
         print(f"keys             : {report.keys}")
         print(f"edges            : {report.edges} — {report.backbone} joining each key to the")
         print( "                   next in position order, and")

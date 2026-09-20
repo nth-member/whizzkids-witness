@@ -17,6 +17,7 @@ from typing import Any, Iterable
 
 import openpyxl
 
+from .errata import Erratum, apply_to_keys, apply_to_nodes, load_errata
 from .graph import Graph, KeyRecord, parse_pairs
 
 NODES_SHEET = "Nodes · Analog+ · Events"
@@ -278,6 +279,7 @@ def load_nodes(workbook_path: Path | str = DEFAULT_WORKBOOK) -> list[Node]:
                     year_events=parse_tuples(cell(row, "Same-year events (tuple)")),
                 )
             )
+        apply_to_nodes(nodes, load_errata())
         return nodes
     finally:
         wb.close()
@@ -384,11 +386,17 @@ def load_keys(workbook_path: Path | str = DEFAULT_WORKBOOK) -> list[KeyRecord]:
                     successors=parse_pairs(cell(row, "Successors (key, gap)")),
                 )
             )
+        apply_to_keys(records, load_errata())
         return records
     finally:
         wb.close()
 
 
 def load_graph(workbook_path: Path | str = DEFAULT_WORKBOOK) -> Graph:
-    """The successor relation over the 399 keys."""
+    """The successor relation over the keys, with declared errata applied."""
     return Graph(load_keys(workbook_path))
+
+
+def applied_errata() -> list[Erratum]:
+    """The corrections in force, for anything that reports on the ledger."""
+    return [e for e in load_errata() if e.applied]

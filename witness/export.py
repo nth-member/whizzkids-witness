@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .axis import verify
-from .ledger import load_graph, load_nodes
+from .ledger import applied_errata, load_graph, load_nodes
 from .store import FindingStore, RunLog
 
 
@@ -69,6 +69,11 @@ def build_payload(workbook=None, store: FindingStore | None = None, now: datetim
             ],
         },
         "key_nodes": key_nodes,
+        "errata": [
+            {"id": e.id, "summary": e.summary, "reason": e.reason,
+             "by": e.reported_by, "on": e.reported_on, "cost": e.cost}
+            for e in applied_errata()
+        ],
         "nodes": [
             {
                 "id": n.node_id,
