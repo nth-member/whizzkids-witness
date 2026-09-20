@@ -187,6 +187,15 @@ A relation between the two is worth recording because it is exact — 23(82.80�
 8400/23 days = **5830 days**, the 23s cancelling — but neither slice defines the other, and the
 year unit implied throughout is 8400/23 = 365.2174 days.
 
+**CIRCUMSPECTION** is a third, on Y = 85.32:
+
+    Ztp = 2133667/1050 = 2032.0638…    epoch 2031-12-24T11:28:41.739Z
+
+Separations between siblings are exact in the same way: 6082 days from the 24.50 slice, **252 days**
+from AGAIN_BORN. The corpus also carries a named reading `END_IE_PURPOSE_CIRCUMSPECTION.100D` over
+the same positions; whether that reading and this slice are the same object is not established here
+and is not assumed.
+
 **One thing is unresolved and declared as such.** The gauge fixes Ztp as a decimal year, not as an
 instant. Converting a decimal year to a calendar moment needs REVOTT's own convention, which is not
 in the files read here, so AGAIN_BORN's epoch was calibrated against the sibling slice whose
