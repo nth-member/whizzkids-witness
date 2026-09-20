@@ -1,11 +1,14 @@
-"""An instance instantiated without context.
+"""An instance instantiated without real-world attachment.
 
-The keys, dated on a given axis, and nothing else: no analog, no chapter, no
-parable, no evidence, no findings.  Position and date are the whole content.
+The keys carry their own developmental framework -- the somite counts, the
+Carnegie-stage markers, the follicular phases, the hidden-count and year
+notations.  That is latent in the domain and travels with it, so it is here.
 
-This exists because the axis is a gauge.  Re-anchoring it produces a different
-instance over the same domain, and that instance has no design story attached to
-it -- so it should not be rendered as though it had one.
+What does not travel is everything obtained by going and looking: the evidence
+items, the source links, the computing design-story chapters, the parable
+glosses, the findings.  Those belong to the instance that was sampled against
+the record, not to the keys.  Re-anchoring the gauge produces a different dating
+of the same framework, and nothing has been checked about it.
 """
 
 from __future__ import annotations
@@ -14,6 +17,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from .axis import load_instance
+from .graph import Graph
 from .ledger import load_keys
 
 WEB = Path(__file__).resolve().parent.parent / "web"
@@ -22,18 +26,30 @@ WEB = Path(__file__).resolve().parent.parent / "web"
 def rows(instance_name: str):
     """Every key, dated on this instance's axis."""
     instance = load_instance(instance_name)
-    keys = sorted(load_keys(), key=lambda r: r.key)
+    records = load_keys()
+    graph = Graph(records)
+    keys = sorted(records, key=lambda r: r.key)
     out = []
     for record in keys:
         offset_days = instance.days_per_unit * record.key
         when = instance.epoch + timedelta(days=offset_days)
+        # The analog is the latent framework the keys carry; the strands are how
+        # it is written, several at once, separated by pipes.
+        strands = [
+            part.strip(" .")
+            for part in str(record.analog or "").split("||")
+            if part.strip(" .")
+        ]
+        default = graph.default_edge(record.key)
         out.append(
             {
                 "key": record.key,
                 "date": when.date().isoformat(),
                 "stamp": when.isoformat().replace("+00:00", "Z"),
                 "days": round(offset_days),
+                "strands": strands,
                 "out": len(record.successors),
+                "next": default.target if default else None,
             }
         )
     return instance, out
@@ -42,9 +58,29 @@ def rows(instance_name: str):
 def build_bare(instance_name: str, out_path: Path | str | None = None) -> Path:
     instance, data = rows(instance_name)
     first, last = data[0], data[-1]
+    def esc(text: str) -> str:
+        return (
+            str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        )
+
     body = "\n".join(
-        f'<tr><td class="k">{r["key"]}</td><td class="d">{r["date"]}</td>'
-        f'<td class="o">{r["days"]:+,}</td><td class="s">{r["out"] or ""}</td></tr>'
+        '<article class="row">'
+        f'<div class="rail"><span class="k">{r["key"]}</span>'
+        f'<span class="d">{r["date"]}</span>'
+        f'<span class="o">{r["days"]:+,}d</span></div>'
+        '<div class="body">'
+        + (
+            "".join(f'<span class="strand">{esc(s)}</span>' for s in r["strands"])
+            or '<span class="none">no text on this key</span>'
+        )
+        + (
+            f'<span class="succ">→ {r["next"]}'
+            + (f' · {r["out"]} stated' if r["out"] else "")
+            + "</span>"
+            if r["next"] is not None
+            else '<span class="succ">sink</span>'
+        )
+        + "</div></article>"
         for r in data
     )
     gauge = instance.gauge
@@ -82,24 +118,26 @@ input{{width:100%;margin-top:22px;font-family:var(--mono);font-size:14px;color:v
   background:var(--surface);border:1px solid var(--rule);border-radius:3px;padding:9px 11px}}
 input:focus-visible{{outline:2px solid var(--accent);outline-offset:1px}}
 .count{{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);margin:10px 0 4px}}
-.scroll{{overflow-x:auto;border-top:1px solid var(--rule)}}
-table{{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px;
-  font-variant-numeric:tabular-nums}}
-th{{text-align:right;font-weight:500;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--ink-3);padding:9px 10px;position:sticky;top:0;background:var(--ground)}}
-th:nth-child(2){{text-align:left}}
-td{{padding:6px 10px;border-bottom:1px solid var(--rule);text-align:right}}
-.k{{color:var(--ink);font-weight:500}}
-.d{{text-align:left;color:var(--ink-2)}}
-.o{{color:var(--ink-3)}}
-.s{{color:var(--accent);font-size:11.5px}}
-tr.zero td{{background:var(--surface);border-bottom-color:var(--accent)}}
-tr.zero .k{{color:var(--accent)}}
+.rows{{border-top:1px solid var(--rule)}}
+.row{{display:grid;grid-template-columns:96px 1fr;gap:0;border-bottom:1px solid var(--rule)}}
+.rail{{padding:10px 12px 10px 0;text-align:right;font-family:var(--mono);font-size:11.5px;
+  font-variant-numeric:tabular-nums;line-height:1.5}}
+.rail .k{{display:block;color:var(--ink);font-weight:500;font-size:12.5px}}
+.rail .d{{display:block;color:var(--ink-2)}}
+.rail .o{{display:block;color:var(--ink-3);font-size:10.5px}}
+.row .body{{padding:10px 0 10px 14px;border-left:1px solid var(--rule);min-width:0}}
+.strand{{display:block;font-size:13.5px;color:var(--ink);line-height:1.5}}
+.strand + .strand{{color:var(--ink-2);margin-top:2px}}
+.none{{display:block;font-size:13px;color:var(--ink-3);font-style:italic}}
+.succ{{display:block;font-family:var(--mono);font-size:10.5px;color:var(--accent);margin-top:5px;
+  letter-spacing:.03em}}
+.row.zero{{background:var(--surface)}}
+.row.zero .rail .k{{color:var(--accent)}}
 footer{{margin-top:26px;color:var(--ink-3);font-size:12px;line-height:1.6;max-width:64ch}}
 </style>
 <div class="wrap">
 <h1>{instance.title}</h1>
-<div class="sub">{len(data)} keys · scale {instance.scale} · axis only</div>
+<div class="sub">{len(data)} keys · scale {instance.scale} · framework only, nothing checked</div>
 
 <div class="gauge">
   <span class="exp">{gauge.get("expression", "")}</span>
@@ -114,26 +152,24 @@ footer{{margin-top:26px;color:var(--ink-3);font-size:12px;line-height:1.6;max-wi
   <div class="fact"><b>{(last["days"] - first["days"]):,}</b><span>days spanned</span></div>
 </div>
 
-<input type="search" id="q" placeholder="filter by position or date…" autocomplete="off">
+<input type="search" id="q" placeholder="filter by position, date or framework text…" autocomplete="off">
 <div class="count" id="count"></div>
-<div class="scroll">
-<table>
-<thead><tr><th>position</th><th>date</th><th>days from Ztp</th><th>succ</th></tr></thead>
-<tbody id="rows">
+<div class="rows" id="rows">
 {body}
-</tbody>
-</table>
 </div>
 
 <footer>
-No analog, no chapter, no evidence and no correspondence is attached to these dates. This is the
-key domain re-anchored on a different gauge, and nothing here claims that anything happened on any
-of these days.
+The text on each key is the developmental framework the domain carries — somite counts and
+Carnegie-stage markers, follicular phases, the hidden-count and year notations — written in
+several strands at once. It travels with the keys and is here unchanged.<br><br>
+What is not here is anything obtained by going and looking: no evidence, no sources, no design-story
+chapter, no correspondence. Nothing on this page claims that anything happened on any of these
+days. It is the same framework dated from a different zero.
 </footer>
 </div>
 <script>
 (function(){{
-  var rows = [].slice.call(document.querySelectorAll('#rows tr'));
+  var rows = [].slice.call(document.querySelectorAll('#rows .row'));
   rows.forEach(function(r){{ if (r.querySelector('.k').textContent.trim() === '0.0')
     r.classList.add('zero'); }});
   var count = document.getElementById('count');

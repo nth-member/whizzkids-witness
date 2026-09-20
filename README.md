@@ -183,9 +183,14 @@ The offset from the whizz-kids epoch is exact and the 23s cancel: 23(82.80−24.
 
     python -m witness build-bare --instance again-born
 
-instantiates all **400 keys** on that axis and renders them with nothing attached — position, date,
-days from Ztp, out-degree. No analog, no chapter, no evidence, no correspondence, because none is
-claimed. `data/instances/again-born.json` declares it; `web/again-born.html` is the page.
+instantiates all **400 keys** on that axis. The **latent framework travels with them** — the somite
+counts and Carnegie-stage markers, the follicular phases, the hidden-count and year notations,
+written in several strands at once, unchanged. 385 of the 400 keys carry text.
+
+What does not travel is anything obtained by going and looking: no evidence, no sources, no
+design-story chapter, no parable gloss, no correspondence. Those belong to the instance that was
+sampled against the record, not to the keys. `data/instances/again-born.json` declares it;
+`web/again-born.html` is the page.
 
 Spans 1990-11-17 (−147.6) to 2089-06-10 (212.4), with 0.00 at 2031-04-16.
 
