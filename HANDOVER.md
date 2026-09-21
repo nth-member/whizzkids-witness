@@ -22,10 +22,12 @@ those dates, with sources, and records where it found nothing.
     ├── instances/  again-born.json  circumspection.json
     └── web/        again-born.html  circumspection.html
 
-The generator for those slices currently lives inside `whizzkids-witness` (`witness/bare.py`,
+The generator  ---  e.g. (((((100)×((85.32)+(0)))+(100×((32.68)+(0÷35)))+(((14160))+(0÷7)))×(48.3÷17640))+5849+(391÷420)−3880)  --- for those slices currently lives inside `whizzkids-witness` (`witness/bare.py`,
 `witness/axis.py`'s instance loader, `data/revott_readings.json`). That is a known structural wart
 — machinery belonging to all slices owned by one slice's project. Splitting it into a `revott`
 package was offered and deferred until a third slice justified it. There are now three.
+
+
 
 ---
 
@@ -58,6 +60,7 @@ Three slices are declared:
 | whizz-kids | 24.50 | 112863/56 = 2015.4107… | 2015-04-30T11:28:41.739Z | 265 sampled of 400 |
 | again-born | 82.80 | 853177/420 = 2031.3738… | 2031-04-16T11:28:41.739Z | 400 |
 | circumspection | 85.32 | 2133667/1050 = 2032.0638… | 2031-12-24T11:28:41.739Z | 400 |
+| exe-tpdp | 34.918 | 84767057/42000 = 2018.2633… | 2018-03-07T06:40:41.739Z | 400 |
 
 Separations between slices are exact, the 23s cancelling: whizz-kids→again-born 5830 days,
 whizz-kids→circumspection 6082 days, again-born→circumspection 252 days.
@@ -66,8 +69,13 @@ whizz-kids→circumspection 6082 days, again-born→circumspection 252 days.
 whizz-kids is not the reference frame; it is simply the slice with evidenceable targets. An earlier
 version of the instance files framed again-born as derived, and that was wrong.
 
-**Y need not be a key.** 24.50 and 85.32 are not members of the 400-key domain; 82.80 is. 85.32 is
-a node position in the whizz-kids sampling (BB-259, attached to key 82.80).
+**Y need not be a key.** 24.50 and 85.32 are not members of the 400-key domain; 82.80 and 34.918
+are. 85.32 is a node position in the whizz-kids sampling (BB-259, attached to key 82.80).
+
+**A separation need not be a whole number of days.** The exe-tpdp slice sits 1041.8 days from the
+24.50 slice because Y = 34.918 carries three decimals. Under the borrowed instant that fraction
+shifts its time of day to 06:40:41.739Z. This is the sharpest place the missing year-to-instant
+convention bites.
 
 **The successor graph.** 400 keys, 704 relations: a **backbone** of 399 — each key to the one
 immediately next to it in time, which holds by default whether or not the workbook writes it down
@@ -128,6 +136,7 @@ with that stated plainly. This is the case the workbook's own method warns about
 | Whizz Kids Witness | `~/whizzkids-witness/web/index.html` | https://claude.ai/artifact/LcaxFfw5pepitte1YW4gfs |
 | AGAIN_BORN Axis | `~/revott/web/again-born.html` | https://claude.ai/artifact/XSJgeBToKMAQqTZ6FCysxr |
 | CIRCUMSPECTION | `~/revott/web/circumspection.html` | https://claude.ai/artifact/Qxayq7szBAdAwjGXoBFEjS |
+| EXE_TPDP | `~/revott/web/exe-tpdp.html` | https://claude.ai/artifact/U5NY8yA1p2RoGzZB4G3Ngm |
 
 Republish by calling the Artifact tool on the file **with that URL**; publishing without it makes a
 second, separate artifact. A republish needs `favicon` passed again if the tool cannot read the

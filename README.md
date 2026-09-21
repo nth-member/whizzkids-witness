@@ -196,6 +196,16 @@ from AGAIN_BORN. The corpus also carries a named reading `END_IE_PURPOSE_CIRCUMS
 the same positions; whether that reading and this slice are the same object is not established here
 and is not assumed.
 
+**EXE_TPDP** is a fourth, on Y = 34.918 — the first gauge input that is *itself* a key in the
+domain it anchors:
+
+    Ztp = 84767057/42000 = 2018.2633…    epoch 2018-03-07T06:40:41.739Z
+
+It is also the first whose separation is not a whole number of days: 1041.8 from the 24.50 slice,
+because Y carries three decimals. Under the calibration below that fractional 0.8 shifts its time
+of day to 06:40:41.739Z rather than the 11:28:41.739Z the others carry — an artefact of the
+borrowing, not a claim about the slice.
+
 **One thing is unresolved and declared as such.** The gauge fixes Ztp as a decimal year, not as an
 instant. Converting a decimal year to a calendar moment needs REVOTT's own convention, which is not
 in the files read here, so AGAIN_BORN's epoch was calibrated against the sibling slice whose
