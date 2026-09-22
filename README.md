@@ -152,119 +152,20 @@ because they are a different kind of claim and are not mixed in with them.
 
 ## Sources
 
-The search is **not restricted**. The tool is left open so the witness can find what the corpus
-never happened to favour — a witness that can only read what the ledger already reads cannot tell
-you anything new.
+The search is open and **no publication is preferred over another**. An earlier version named the
+ledger's own most-cited domains as preferred; that was withdrawn, because a third of the ledger's
+positions rest on "a report was published that day", drawn overwhelmingly from one archive that
+publishes every weekday. That is true of almost any date in its range, carries no information, and
+naming those domains would have trained the witness to reproduce it.
 
-But the ledger has a legible source discipline of its own: **1,074 citations across 56 domains**,
-led by wired.com (the archive spine, queried by dated sitemap), then the primary announcements of
-the organisations themselves — openai.com, deepmind.google, apple.com, arxiv.org, news.microsoft.com,
-anthropic.com — and a few computing-history archives. That list is derived from the workbook at
-run time, not hardcoded, and named to the researcher as preferred.
+The brief now warns against exactly that hit: report an event because the event is dated, not
+because coverage of it exists.
 
-Every finding is then marked in code, from its URL, as resting **in the ledger's own sources** or
-**beyond the ledger's sources**. As with the bands, that judgement is arithmetic on data, never
-the model's account of where it looked.
+Each finding is still marked in code, from its URL, as *also cited by the ledger* or *not
+previously cited here* — descriptive, not a ranking.
 
 Where the searches physically run is Anthropic's infrastructure: `web_search_20260209` is a
-server-side tool, and which index sits behind it is not visible from here. `allowed_domains` /
-`blocked_domains` are available on that tool if you later want the policy enforced rather than
-preferred.
-
-## Other slices
-
-**whizz-kids is not the reference frame.** It is one slice of REVOTT, anchored by its own Ztp, and
-so is every other. This repository happens to have been built on that one because it is the slice
-with reachable real-world targets — which is a fact about what can be evidenced, not about which
-slice is primary.
-
-**AGAIN_BORN** is an independent slice, anchored by its own gauge:
-
-    (((((100)×(82.80))+(100×0)+(14160))×(48.3÷17640))+5849+(391÷420)−3880)
-      Ztp = 853177/420 = 2031.3738…
-
-A relation between the two is worth recording because it is exact — 23(82.80−24.50)/84 years ×
-8400/23 days = **5830 days**, the 23s cancelling — but neither slice defines the other, and the
-year unit implied throughout is 8400/23 = 365.2174 days.
-
-**CIRCUMSPECTION** is a third, on Y = 85.32:
-
-    Ztp = 2133667/1050 = 2032.0638…    epoch 2031-12-24T11:28:41.739Z
-
-Separations between siblings are exact in the same way: 6082 days from the 24.50 slice, **252 days**
-from AGAIN_BORN. The corpus also carries a named reading `END_IE_PURPOSE_CIRCUMSPECTION.100D` over
-the same positions; whether that reading and this slice are the same object is not established here
-and is not assumed.
-
-**EXE_TPDP** is a fourth, on Y = 34.918 — the first gauge input that is *itself* a key in the
-domain it anchors:
-
-    Ztp = 84767057/42000 = 2018.2633…    epoch 2018-03-07T06:40:41.739Z
-
-It is also the first whose separation is not a whole number of days: 1041.8 from the 24.50 slice,
-because Y carries three decimals. Under the calibration below that fractional 0.8 shifts its time
-of day to 06:40:41.739Z rather than the 11:28:41.739Z the others carry — an artefact of the
-borrowing, not a claim about the slice.
-
-**One thing is unresolved and declared as such.** The gauge fixes Ztp as a decimal year, not as an
-instant. Converting a decimal year to a calendar moment needs REVOTT's own convention, which is not
-in the files read here, so AGAIN_BORN's epoch was calibrated against the sibling slice whose
-Ztp/instant pair is known — giving the 5830 days and its time of day. That is a borrowing, recorded
-in `data/instances/again-born.json` under `unresolved`. With the native convention the epoch is set
-directly from 853177/420 and the borrowing goes away.
-
-    python -m witness build-bare --instance again-born
-
-instantiates all **400 keys** on that axis. The **latent framework travels with them** — the somite
-counts and Carnegie-stage markers, the follicular phases, the hidden-count and year notations,
-written in several strands at once, unchanged. 385 of the 400 keys carry text.
-
-What does not travel is anything obtained by going and looking: no evidence, no sources, no
-design-story chapter, no parable gloss, no correspondence. Those belong to the instance that was
-sampled against the record, not to the keys. `data/instances/again-born.json` declares it, and the page is
-written to the REVOTT tree — `~/revott/web/again-born.html` — not into this repository, because a
-slice of REVOTT is not part of this instance's project. `REVOTT_ROOT` overrides the location.
-
-Spans 1990-11-17 (−147.6) to 2089-06-10 (212.4), with 0.00 at 2031-04-16.
-
-## Working it without an API key
-
-The research is two prompts and a structured answer, so it does not have to be the agent that
-does it. Print the prompt, run it in any Claude session, bring the answer back:
-
-    python -m witness prompt --node BB-004 --rules      # the prompt, and the rules of evidence
-    python -m witness ingest --node BB-004 --json f.json # take the answer in
-
-Nothing is relaxed on the way in. The bands are still computed here from two dates, the source
-tier is still judged from the URL, the store is still append-only, and the record says the finding
-arrived this way — `mode: ingest`, with the session named — rather than from a run the agent made
-itself. `witness ingest` imports nothing from the API layer, so it works on a machine with neither
-credentials nor the `anthropic` package.
-
-Edges work the same way: `--edge -5.7342 -5.7145`.
-
-## The control
-
-Something notable happened within seven days of almost any date since 1974. A finding at a ledger
-date therefore means nothing on its own, and a report full of them means less, not more — the more
-you look, the less you see. Only the difference between the ledger's dates and dates that are not
-the ledger's carries information.
-
-    python -m witness prompt --node BB-004 --decoy       # a stable displaced date
-    python -m witness ingest --node BB-004 --decoy 170 --json f.json
-
-A decoy is the same position researched under the same rules at a date displaced 120–900 days —
-far enough that the 30-day window cannot overlap, near enough to stay in the same technological
-era. The evidence already on file is stripped, because it belongs to the real date. Findings carry
-their displacement, so the two populations can never be confused, and `WITNESS.md` prints the
-comparison. Until a control exists, the report says so in place of the table.
-
-## What a run costs
-
-Runs record the API's own usage figures and what they cost at the rates in `witness/usage.py` —
-tokens in and out, cache reads and writes, and searches at $10 per 1,000. Each run's measured
-cost is printed when it finishes and stored on its `RunRecord`, so the numbers in any estimate can
-be checked against what actually happened.
+server-side tool, and which index sits behind it is not visible from here.
 
 ## The bands
 

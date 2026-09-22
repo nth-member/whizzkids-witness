@@ -26,8 +26,10 @@ from .ledger import DEFAULT_WORKBOOK
 
 URL_PATTERN = re.compile(r"https?://[^\s'\")\,]+")
 
-LEDGER_PREFERRED = "in the ledger's own sources"
-BEYOND_LEDGER = "beyond the ledger's sources"
+# Descriptive labels, not a ranking: they say where a finding's source sits
+# relative to the ledger's existing citations, and nothing about its quality.
+LEDGER_PREFERRED = "also cited by the ledger"
+BEYOND_LEDGER = "not previously cited here"
 UNSOURCED = "no usable url"
 
 
@@ -81,30 +83,28 @@ def tier_for(url: str, workbook_path: str | None = None) -> str:
 
 
 def preferred_block(workbook_path: str | None = None, top: int = 18) -> str:
-    """The preferred-sources paragraph given to the researcher."""
-    domains = cited_domains(workbook_path)
-    if not domains:
-        return ""
-    total = sum(count for _, count in domains)
-    listed = ", ".join(domain for domain, _ in domains[:top])
-    return f"""\
+    """The evidence policy given to the researcher.
+
+    The ledger's own citations are no longer named as preferred.  A third of its
+    positions rest on "a report was published that day", drawn overwhelmingly
+    from one periodical archive that publishes every weekday -- which is true of
+    almost any date in its range and so carries no information.  Naming those
+    domains as preferred would have trained the witness to reproduce exactly
+    that.
+    """
+    return """\
 WHERE TO LOOK
 
-The ledger cites {total} sources across {len(domains)} domains. In order of how
-much it relies on them, the most used are:
+Search openly. No publication is preferred over another, and a source is not
+better for having been cited by this ledger before.
 
-  {listed}
+Prefer a primary record over reporting about it: a dated release, a filing, a
+standards document, a court record, an archive holding the original. Prefer the
+date a thing happened over the date it was written about, and where you have
+both, say which is which.
 
-That is one periodical archive carrying contemporary reporting, the primary
-announcements of the organisations themselves, and a few computing-history
-archives. Prefer those sources: a finding that rests on one of them sits on the
-same footing as the evidence already in the ledger.
-
-You are not restricted to them. Where the better source for a date lies
-somewhere else -- a national archive, a standards body, a court record, a
-regional publication, the original paper -- go there and cite it. A witness that
-can only read what the ledger already reads cannot tell anyone anything new.
-
-Prefer a primary source over reporting about it, and the date a thing happened
-over the date it was written about. Where you have both, say which is which.
+Be wary of one kind of hit in particular. That a publication ran an article on a
+given day is nearly always true of any day, and is not evidence that the day was
+notable. Report an event because the event is dated, not because coverage of it
+exists.
 """
