@@ -64,7 +64,7 @@ jobs:
         run: |
           git config user.name "whizzkids-witness"
           git config user.email "noreply@github.com"
-          git add findings reports web/index.html
+          git add findings reports docs/index.html
           if git diff --staged --quiet; then
             echo "The witness found nothing new. Nothing to commit."
           else

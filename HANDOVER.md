@@ -127,13 +127,13 @@ with that stated plainly. This is the case the workbook's own method warns about
 
 | | role | updates |
 |---|---|---|
-| `~/whizzkids-witness` | working copy | `witness ingest` rewrites findings, `reports/WITNESS.md` and `web/index.html` |
+| `~/whizzkids-witness` | working copy | `witness ingest` rewrites findings, `reports/WITNESS.md` and `docs/index.html` |
 | GitHub, private | the record: history and backup | manual `git push` |
 | claude.ai artifacts | the view, readable on a phone | only a Claude session can republish |
 
 | page | file | artifact |
 |---|---|---|
-| Whizz Kids Witness | `~/whizzkids-witness/web/index.html` | https://claude.ai/artifact/LcaxFfw5pepitte1YW4gfs |
+| Whizz Kids Witness | `~/whizzkids-witness/docs/index.html` | https://nth-member.github.io/whizzkids-witness/ (and https://claude.ai/artifact/LcaxFfw5pepitte1YW4gfs) |
 | AGAIN_BORN Axis | `~/revott/web/again-born.html` | https://claude.ai/artifact/XSJgeBToKMAQqTZ6FCysxr |
 | CIRCUMSPECTION | `~/revott/web/circumspection.html` | https://claude.ai/artifact/Qxayq7szBAdAwjGXoBFEjS |
 | EXE_TPDP | `~/revott/web/exe-tpdp.html` | https://claude.ai/artifact/U5NY8yA1p2RoGzZB4G3Ngm |

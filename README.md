@@ -195,10 +195,11 @@ nothing is a successful run.
 
 ## The browser page
 
-Published, and openable on a phone: **https://claude.ai/artifact/LcaxFfw5pepitte1YW4gfs**
-(private to the account that published it until shared).
+Published on GitHub Pages: **https://nth-member.github.io/whizzkids-witness/** (from `docs/` on main),
+and openable on a phone. An earlier copy is also on claude.ai, private to its account:
+https://claude.ai/artifact/LcaxFfw5pepitte1YW4gfs.
 
-`web/index.html` is one self-contained file with the ledger and the findings baked in. It opens
+`docs/index.html` is one self-contained file with the ledger and the findings baked in. It opens
 in Firefox or Chrome on Android, Safari or Chrome on iOS, or any desktop browser — from the
 filesystem, off a USB stick, or any static host. No server, no network, no build step.
 

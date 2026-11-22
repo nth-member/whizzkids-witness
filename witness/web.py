@@ -15,7 +15,7 @@ from pathlib import Path
 from .export import build_payload
 from .store import FindingStore
 
-WEB = Path(__file__).resolve().parent.parent / "web"
+WEB = Path(__file__).resolve().parent.parent / "docs"   # GitHub Pages serves main /docs
 TEMPLATE = WEB / "template.html"
 PLACEHOLDER = "/*__PAYLOAD__*/"
 
